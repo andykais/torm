@@ -21,7 +21,12 @@ export type BuildSchemaField<
     encode: Encode
     decode: Decode
 }
-export type BuildSchema<T extends SchemaGeneric> = {
+
+export type BuildSchema<T extends SchemaGeneric> = 
+  BuildSchemaMap<T>
+  & { ['*']: ValueOf<BuildSchemaMap<T>> }
+
+type BuildSchemaMap<T extends SchemaGeneric> = {
     [K in keyof T]: {
         table_name: string
         field_name: K
@@ -29,10 +34,10 @@ export type BuildSchema<T extends SchemaGeneric> = {
         decode: T[K]
     }
 }
-
+type ValueOf<T> = T[keyof T]
 
 function schema<T extends SchemaGeneric>(table_name: string, schema: T) {
-    const built_schema: Partial<BuildSchema<T>> = {}
+    const built_schema: Partial<BuildSchemaMap<T>> = {}
     Object.keys(schema).forEach((field: keyof T) => {
         built_schema[field] = {
             table_name,
@@ -43,5 +48,10 @@ function schema<T extends SchemaGeneric>(table_name: string, schema: T) {
     })
     return built_schema as BuildSchema<T>
 }
+
+export type ZodInput<T extends z.ZodSchema<any, any, any>> = T extends z.ZodSchema<infer In, any, any>
+    ? In
+    : never
+
 
 export { schema }
