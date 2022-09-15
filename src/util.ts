@@ -27,6 +27,7 @@ export type ZodInput<T extends z.ZodSchema<any, any, any>> = T extends z.ZodSche
     ? In
     : never
 
+export type Constructor<T = {}> = new (...args: any[]) => T;
 
 export type Driver =
   | SQLiteNativeDriver

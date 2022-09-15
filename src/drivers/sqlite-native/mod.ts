@@ -1,6 +1,6 @@
 import { sqlite_native } from '../../dependencies.ts'
 import type { BuiltSchemaField, SchemaGeneric } from '../../schema.ts'
-import { ModelBase } from '../../model.ts'
+import { ModelBase, WithStaticSchema } from '../../model.ts'
 import { StatementBase } from '../../statement.ts'
 
 
@@ -9,37 +9,17 @@ class Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> exte
     super()
   }
 
-  private get_param(field_name: string) {
-    const field = this.params[field_name]
-    if (field) return field
-    throw new Error(`Field ${field_name} does not exist in params list (${Object.keys(this.params)})`)
-  }
+  one = (params: Params) => this.stmt.one(this.encode_params(params))
 
-  protected encode_params(params: Params) {
-    const encoded_params: {[field: string]: any} = {}
-    for (const [key, val] of Object.entries(params)) {
-      const field = this.get_param(key)
-      encoded_params[key] = this.params[key].encode.parse(val)
-    }
-    return encoded_params
-  }
 
-  one = (params: Params) => {
-    const encoded_params = this.encode_params(params)
-    return this.stmt.one(encoded_params)
-  }
+  all = (params: Params) => this.stmt.all(this.encode_params(params))
 
-  all = (params: Params) => {
-    return {} as any
-  }
 
-  exec = (params: Params) => {
-    return {} as any
-  }
+  exec = (params: Params) => this.stmt.exec(this.encode_params(params))
 }
 
+// TODO see if we can make this abstract for the mixin
 abstract class Model extends ModelBase {
-
 
   protected prepare<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, result: Result) {
     const stmt = this.driver.prepare(sql)
@@ -47,4 +27,11 @@ abstract class Model extends ModelBase {
   }
 }
 
-export { Statement, Model }
+class TempModelNonAbstract extends Model {}
+const ModelMixin = WithStaticSchema(TempModelNonAbstract)
+
+export {
+  Statement,
+  // Model
+  ModelMixin as Model
+}
