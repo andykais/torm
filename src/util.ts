@@ -1,4 +1,5 @@
 import * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
+import type { SQLiteNativeDriver } from './dependencies.ts'
 
 declare const __nominal__type: unique symbol;
 export type Nominal<Type, Identifier> = Type & {
@@ -9,6 +10,13 @@ export type NominalMapObject<T, Identifier> = {
   [K in keyof T]: Nominal<T[K], Identifier>
 }
 
+type AllKeys<T> = T extends any ? keyof T : never;
+type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
+    ? T[K]
+    : never;
+export type Merge<T extends object> = {
+  [k in AllKeys<T>]: PickType<T, k>;
+}
 export type ValueOf<T> = T[keyof T]
 
 export type ZodInput<T extends z.ZodSchema<any, any, any>> = T extends z.ZodSchema<infer In, any, any>
@@ -16,4 +24,5 @@ export type ZodInput<T extends z.ZodSchema<any, any, any>> = T extends z.ZodSche
     : never
 
 
-export { z }
+export type Driver =
+  | SQLiteNativeDriver
