@@ -1,4 +1,5 @@
 import { z } from './util.ts'
+import type { Nominal } from './util.ts'
 import type { BuiltSchemaField, SchemaFieldGeneric, SchemaParams, SchemaResult } from './schema.ts'
 import type { ZodInput } from './util.ts'
 
@@ -11,16 +12,31 @@ type Merge<T extends object> = {
 }
 type ValueOf<T> = T[keyof T];
 
+type ExtractParamsInputs<T> =
+  T extends Nominal<BuiltSchemaField<infer Name, any, any>, 'params'>
+    ? { [K in Name]: ZodInput<T['encode']> }
+    : never
+
+type ExtractResultInputs<T> =
+  T extends Nominal<BuiltSchemaField<infer Name, any, any>, 'result'>
+    ? { [K in Name]: ZodInput<T['encode']> }
+    : never
+
 type StatementParams<T extends ColumnInput[]> =
     Merge<
       T extends Array<infer G>
         ? G extends Array<infer B>
-          ? B extends BuiltSchemaField<infer Name, any, any>
-              ? { [K in Name]: ZodInput<B['encode']> }
-              : never
-          : G extends BuiltSchemaField<infer Name, any, any>
-            ? { [K in Name]: ZodInput<G['encode']> }
-            : never
+          ? ExtractParamsInputs<B>
+          : ExtractParamsInputs<G>
+        : never
+    >
+
+type StatementResult<T extends ColumnInput[]> =
+    Merge<
+      T extends Array<infer G>
+        ? G extends Array<infer B>
+          ? ExtractResultInputs<B>
+          : ExtractResultInputs<G>
         : never
     >
 
@@ -28,9 +44,9 @@ type StatementParams<T extends ColumnInput[]> =
 type ColumnInput =
   | SchemaFieldGeneric
   | SchemaFieldGeneric[]
-function query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, {}> {
+function query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     return {
-        one:  (params: {}) => ({}),
+        one:  (params: {}) => ({} as any),
         all:  (params: {}) => [],
         exec: (params: {}) => {},
         params: {} as StatementParams<T>
