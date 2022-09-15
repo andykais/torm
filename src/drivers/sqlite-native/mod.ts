@@ -16,12 +16,10 @@ class Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> exte
   }
 
   protected encode_params(params: Params) {
-    // console.log('this.params', this.params)
     const encoded_params: {[field: string]: any} = {}
     for (const [key, val] of Object.entries(params)) {
       const field = this.get_param(key)
       encoded_params[key] = this.params[key].encode.parse(val)
-      console.log({ field, val })
     }
     return encoded_params
   }

@@ -1,15 +1,17 @@
 import { z } from './dependencies.ts'
 import type { Nominal, NominalMapObject, NominalMapUnion, ZodInput, ValueOf } from './util.ts'
+import { ParamsField, ResultField } from './query.ts'
 
 export type SchemaInputGeneric = {
     [field: string]: z.ZodSchema<any, any, any>
 }
-export type SchemaFieldGeneric = Nominal<{
-    table_name: string
-    field_name: string
-    encode: z.ZodSchema<any, any, any>
-    decode: z.ZodSchema<any, any, any>
-}, 'params' | 'result'>
+export type SchemaField = {
+  table_name: string
+  field_name: string
+  encode: z.ZodSchema<any, any, any>
+  decode: z.ZodSchema<any, any, any>
+}
+export type SchemaFieldGeneric = Nominal<SchemaField, 'params' | 'result'>
 
 export type SchemaGeneric = {
   [field: string]: SchemaFieldGeneric
@@ -64,23 +66,35 @@ interface SchemaOutput<T extends SchemaInputGeneric> {
 }
 
 function schema<T extends SchemaInputGeneric>(table_name: string, schema: T): SchemaOutput<T> {
-  const built_schema: Partial<BuiltSchemaMap<T>> = {}
+  const built_params_schema: Partial<BuiltSchemaMap<T>> = {}
+  const built_result_schema: Partial<BuiltSchemaMap<T>> = {}
   // TODO add '*'
   Object.keys(schema).forEach((field: keyof T) => {
-      built_schema[field] = {
-          table_name,
-          field_name: field,
-          encode: schema[field],
-          decode: schema[field],
-      }
+    const schema_field: SchemaField = {
+      table_name,
+      field_name: field as string,
+      encode: schema[field],
+      decode: schema[field],
+    }
+    // TODO make typesafe
+    built_params_schema[field] = new ParamsField(schema_field) as any
+    built_result_schema[field] = new ResultField(schema_field) as any
   })
 
-  const full_schema = built_schema as BuiltSchema<T>
-  ;(full_schema as any)['*'] = Object.values(built_schema)
+  ;(built_params_schema['*'] as any) = Object.values(built_params_schema)
+  ;(built_result_schema['*'] as any) = Object.values(built_result_schema)
+
   return {
-    params: (full_schema as any) as SchemaParams<T>,
-    result: (full_schema as any) as SchemaResult<T>,
+    params: built_params_schema as SchemaParams<T>,
+    result: built_result_schema as SchemaResult<T>,
   }
+
+  // const full_schema = built_schema as BuiltSchema<T>
+  // ;(full_schema as any)['*'] = Object.values(built_schema)
+  // return {
+  //   params: (full_schema as any) as SchemaParams<T>,
+  //   result: (full_schema as any) as SchemaResult<T>,
+  // }
 }
 
 
