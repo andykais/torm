@@ -102,4 +102,4 @@
 export { Model } from './model.ts'
 export { schema } from './schema.ts'
 export { query } from './query.ts'
-export * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
+export { z } from './util.ts'

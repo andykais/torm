@@ -1,5 +1,6 @@
-import * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
-import type { BuildSchemaField, BuildSchemaFieldGeneric, ZodInput } from './schema.ts'
+import { z } from './util.ts'
+import type { BuiltSchemaField, SchemaFieldGeneric, SchemaParams, SchemaResult } from './schema.ts'
+import type { ZodInput } from './util.ts'
 
 type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
@@ -14,10 +15,10 @@ type StatementParams<T extends ColumnInput[]> =
     Merge<
       T extends Array<infer G>
         ? G extends Array<infer B>
-          ? B extends BuildSchemaField<infer Name, any, any>
+          ? B extends BuiltSchemaField<infer Name, any, any>
               ? { [K in Name]: ZodInput<B['encode']> }
               : never
-          : G extends BuildSchemaField<infer Name, any, any>
+          : G extends BuiltSchemaField<infer Name, any, any>
             ? { [K in Name]: ZodInput<G['encode']> }
             : never
         : never
@@ -25,8 +26,8 @@ type StatementParams<T extends ColumnInput[]> =
 
 
 type ColumnInput =
-  | BuildSchemaFieldGeneric
-  | BuildSchemaFieldGeneric[]
+  | SchemaFieldGeneric
+  | SchemaFieldGeneric[]
 function query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, {}> {
     return {
         one:  (params: {}) => ({}),

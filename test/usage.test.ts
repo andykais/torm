@@ -22,7 +22,8 @@ class Book extends Model {
   // TODO we need to be able to rename fields. Likely this will be: `${Author.schema.id('author_id')}`
   // TODO columns need to include table name, like author.id
   // get = query`SELECT ${[Book.schema.id, Book.schema.isbn]}, ${Book.schema.title} FROM book`
-  get = query`SELECT ${Book.schema['*']}, ${Author.schema.first_name}  FROM book`
+  // get = query`SELECT ${Book.schema.result['*']}  FROM book WHERE id = ${Book.schema.params.id}`
+  get = query`SELECT ${Book.schema.result['*']} FROM book WHERE id = ${Book.schema.params.id}`
 }
 
 
@@ -31,8 +32,8 @@ Deno.test('usage', async () => {
   await driver.connect()
 
   const book = new Book()
-  const id: number = book.get.params.id
-  const isbn: string = book.get.params.isbn
+  // const id: number = book.get.params.id
+  // const isbn: string = book.get.params.isbn
   // const db = torm(driver, { FooBar })
 
   // db.models.FooBar.schema
