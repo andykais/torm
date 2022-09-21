@@ -1,5 +1,4 @@
 import { z } from './dependencies.ts'
-import type { Nominal, ExtractFromNominal } from './util.ts'
 import type { BuiltSchemaField, SchemaFieldGeneric, SchemaField, SchemaParams, SchemaResult } from './schema.ts'
 import type { ZodInput } from './util.ts'
 
@@ -24,8 +23,7 @@ export class Field<T extends SchemaField> implements SchemaField {
   }
 }
 
-// the 'type' field is silly, but necessary.
-// Typescript has structural types,
+// the 'type' field is silly, but necessary. Typescript has structural types,
 // so it cant tell the difference between ParamsField and ResultField if there are no different properties
 export class ParamsField<T extends SchemaField> extends Field<T> {
   type = 'params' as const
