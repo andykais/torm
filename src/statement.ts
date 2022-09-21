@@ -1,14 +1,14 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
-import type { Nominal, ZodInput, Merge } from './util.ts'
-import type { ColumnInput } from './query.ts'
+import type { ZodInput, Merge } from './util.ts'
+import { ColumnInput, ParamsField, ResultField } from './query.ts'
 
 type ExtractParamsInputs<T> =
-  T extends Nominal<BuiltSchemaField<infer Name, any, any>, 'params'>
+  T extends ParamsField<BuiltSchemaField<infer Name, any, any>>
     ? { [K in Name]: ZodInput<T['encode']> }
     : never
 
 type ExtractResultInputs<T> =
-  T extends Nominal<BuiltSchemaField<infer Name, any, any>, 'result'>
+  T extends ResultField<BuiltSchemaField<infer Name, any, any>>
     ? { [K in Name]: ZodInput<T['encode']> }
     : never
 
