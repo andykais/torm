@@ -12,14 +12,16 @@ export type ColumnInput =
 export class Field<T extends SchemaField> implements SchemaField {
   table_name: T['table_name']
   field_name: T['field_name']
-  encode: T['encode']
-  decode: T['decode']
+  // encode: T['encode']
+  // decode: T['decode']
+  data_transformers: T['data_transformers']
 
   public constructor(public schema_field: T) {
     this.table_name = schema_field.table_name
     this.field_name = schema_field.field_name
-    this.encode = schema_field.encode
-    this.decode = schema_field.decode
+    // this.encode = schema_field.encode
+    // this.decode = schema_field.decode
+    this.data_transformers = schema_field.data_transformers
   }
 }
 
