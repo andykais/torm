@@ -2,12 +2,35 @@ import { ParamsField, ResultField } from './query.ts'
 import { schema } from './schema.ts'
 import type { Driver, Constructor } from './util.ts'
 import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, SchemaOutput } from './schema.ts'
-import type { Statement, StatementParams, StatementResult } from './statement.ts'
+import { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { ColumnInput } from './query.ts'
 
-abstract class ModelBase {
-  public constructor(protected driver: Driver) {
+interface ModelClass {
+  new (): ModelBase
+}
+interface ModelInstance {
+  prepare_queries: (driver: Driver) => void
+  on_create: () => void
+}
 
+abstract class ModelBase implements ModelInstance {
+  private _driver: Driver | null = null
+  private registered_stmts: Statement<any, any>[] = []
+
+  public on_create() {}
+
+  public prepare_queries(driver: Driver) {
+    this._driver = driver
+    // TODO detect _only_ do this if not exists
+    this.on_create()
+    for (const stmt of this.registered_stmts) {
+      stmt.prepare_query(driver)
+    }
+  }
+
+  public get driver() {
+    if (this._driver) return this._driver
+    else throw new Error('A driver cannot be instantiated until init() is called')
   }
 
   // TODO rename to 'prepare'?
@@ -26,11 +49,12 @@ abstract class ModelBase {
       sql_string += column_inputs + string_part
     }
 
-    const stmt = this.prepare(sql_string, params_fields as StatementParams<T>, result_fields as StatementResult<T>)
+    const stmt = this.create_stmt(sql_string, params_fields as StatementParams<T>, result_fields as StatementResult<T>)
+    this.registered_stmts.push(stmt)
     return stmt
   }
 
-  protected abstract prepare<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, results: Result): Statement<Params, Result>
+  protected abstract create_stmt<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, results: Result): Statement<Params, Result>
 
   private extract_columns(column_input: ColumnInput, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
     if (Array.isArray(column_input)) {
@@ -80,3 +104,4 @@ const WithStaticSchema =
     }
 
 export { ModelBase, WithStaticSchema }
+export type { ModelClass, ModelInstance }
