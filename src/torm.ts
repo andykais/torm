@@ -17,6 +17,7 @@ abstract class SchemasModel extends ModelBase {
 
 abstract class TormBase<D extends Driver> {
   private _driver: D | null = null
+  private model_class_registry: ModelClass[] = []
   private model_registry: ModelInstance[] = []
 
   static migrations?: {
@@ -27,6 +28,7 @@ abstract class TormBase<D extends Driver> {
 
   protected model<T extends ModelClass>(model_class: T): InstanceType<T> {
     const model = new model_class()
+    this.model_class_registry.push(model_class)
     this.model_registry.push(model)
     return model as InstanceType<T>
   }
@@ -59,6 +61,13 @@ abstract class TormBase<D extends Driver> {
           const migration = new thisConstructor.migrations.initialization()
           migration.prepare_queries(driver)
           migration.call()
+        }
+        for (const model_class of this.model_class_registry) {
+          if (model_class.migrations?.initialization) {
+            const migration = new model_class.migrations.initialization()
+            migration.prepare_queries(driver)
+            migration.call()
+          }
         }
       }
       this.schemas.unsafe_version_set(application_version)

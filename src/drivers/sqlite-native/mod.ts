@@ -5,8 +5,9 @@ import { StatementBase } from '../../statement.ts'
 import { TormBase, type SchemasModel } from '../../torm.ts'
 // import { Database } from '../../../../sqlite-native/src/database.ts'
 import { SQLiteNativeDriver as Database } from '../../dependencies.ts'
-import { MigrationBase } from '../../migration.ts'
+import { MigrationBase, type MigrationClass } from '../../migration.ts'
 import { field } from '../../mod.ts'
+// import type { Constructor } from '../../util.ts'
 
 type PreparedStatement = sqlite_native.PreparedStatement<any>
 
@@ -31,6 +32,7 @@ class Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> exte
   }
 }
 
+type Constructor<T> = Function & { prototype: T }
 
 // TODO see if we can make this abstract for the mixin
 abstract class DriverModel extends ModelBase {
@@ -41,6 +43,16 @@ const Model = WithStaticSchema(TempModelNonAbstract)
 
 abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
+
+  static create(version: string, arg: string | ((driver: Database) => void)): MigrationClass {
+    return class InlineMigration extends Migration {
+      version = version
+      call = () => {
+        if (typeof arg === 'string') this.driver.exec(arg)
+        else arg(this.driver)
+      }
+    }
+  }
 }
 
 class SqliteMasterModel extends Model('sqlite_master', {

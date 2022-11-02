@@ -10,6 +10,15 @@ class Author extends Model('author', {
   first_name: field.string(),
   last_name:  field.string(),
 }) {
+  static migrations = {
+    initialization: Migration.create('1.1.0', `
+      CREATE TABLE IF NOT EXISTS author (
+        id INTEGER NOT NULL PRIMARY KEY,
+        first_name TEXT,
+        last_name TEXT NOT NULL
+      )`)
+  }
+
   create = this.query`INSERT INTO author (first_name, last_name) VALUES (${[Author.params.first_name, Author.params.last_name]})`.exec
   get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
 }
@@ -20,6 +29,17 @@ class Book extends Model('book', {
   title:      field.string(),
   data:       field.json(),
 }) {
+  static migrations = {
+    initialization: Migration.create('1.1.0', `
+      CREATE TABLE IF NOT EXISTS book (
+        id INTEGER NOT NULL PRIMARY KEY,
+        author_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        data TEXT,
+        FOREIGN KEY(author_id) REFERENCES author(id)
+      )`)
+  }
+
   create = this.query`INSERT INTO book (title, author_id, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.data]})`.exec
   get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
 
@@ -70,7 +90,7 @@ class BookORM extends Torm {
 //   // static framework = {
   static migrations = {
     version: '1.1.0',
-    initialization: InitializeSchemasMigration,
+    // initialization: InitializeSchemasMigration,
     // upgrades: [AddPublishedAtFieldMigration],
   }
 
