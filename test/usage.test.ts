@@ -48,26 +48,6 @@ class Book extends Model('book', {
     INNER JOIN author ON author_id = Author.id`.all
 }
 
-class InitializeSchemasMigration extends Migration {
-  version = '1.1.0' as const
-
-  call() {
-    this.driver.exec(`
-      CREATE TABLE IF NOT EXISTS author (
-        id INTEGER NOT NULL PRIMARY KEY,
-        first_name TEXT,
-        last_name TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS book (
-        id INTEGER NOT NULL PRIMARY KEY,
-        author_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        data TEXT,
-        FOREIGN KEY(author_id) REFERENCES author(id)
-      )`)
-  }
-}
-
 // const add_published_at_field_migration = migration('1.1.0', (driver: Driver) => {
 //   driver.exec(`ALTER TABLE book ADD COLUMN published_at DATETIME`)
 // })
@@ -82,12 +62,6 @@ class AddPublishedAtFieldMigration extends Migration {
 
 
 class BookORM extends Torm {
-//   static version: '1.1.0',
-//   static initialization = InitializeSchemasMigration,
-//   static upgrades = [AddPublishedAtFieldMigration],
-
-//   // static metadata = {
-//   // static framework = {
   static migrations = {
     version: '1.1.0',
     // initialization: InitializeSchemasMigration,
@@ -137,10 +111,30 @@ Deno.test({
     const db = new BookORM('test/fixtures/migrations.db')
     await db.init()
 
-    const version = db.schemas.version()
-    console.log(version)
-
+    console.log(db.schemas.version())
     db.driver.close()
+
+    class Book_V2 extends Model('book', {
+      id:           field.number(),
+      author_id:    field.number(),
+      title:        field.string(),
+      data:         field.json(),
+      published_at: field.datetime(),
+    }) {
+      get = this.query`SELECT ${Book_V2.result['*']} FROM book WHERE id = ${Book_V2.params.id}`.one
+    }
+    class BookORM_V2 extends Torm {
+      static migrations = {
+        version: '1.1.1',
+        upgrades: [Migration.create('1.1.1', 'ALTER TABLE book ADD COLUMN published_at DATETIME')]
+      }
+      book = this.model(Book_V2)
+    }
+
+    const db_v2 = new BookORM_V2('test/fixtures/migrations.db')
+    await db_v2.init()
+    console.log(db_v2.schemas.version())
+    db_v2.driver.close()
   },
  only: true
 })

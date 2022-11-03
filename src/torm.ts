@@ -2,6 +2,7 @@ import type { Constructor, Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
 import type { MigrationClass } from './migration.ts'
 import { ModelBase } from './model.ts'
+import * as semver from "https://deno.land/std@0.161.0/semver/mod.ts";
 
 interface TableRow {
   table_name: string
@@ -56,7 +57,7 @@ abstract class TormBase<D extends Driver> {
 
     if (application_version !== undefined) {
       const current_version = this.schemas.version()
-      if (this.schemas.version() === null) {
+      if (current_version === null) {
         if (thisConstructor.migrations?.initialization) {
           const migration = new thisConstructor.migrations.initialization()
           migration.prepare_queries(driver)
@@ -69,6 +70,16 @@ abstract class TormBase<D extends Driver> {
             migration.call()
           }
         }
+      } else if (this.version_less_than(current_version, application_version)) {
+        const migrations = (thisConstructor.migrations?.upgrades ?? []).map(m => new m())
+        migrations.sort((a, b) => semver.compare(a.version, b.version))
+        for (const migration of migrations) {
+          if (semver.gt(migration.version, current_version)) {
+            migration.prepare_queries(driver)
+            migration.call()
+          }
+        }
+
       }
       this.schemas.unsafe_version_set(application_version)
     }
@@ -76,6 +87,11 @@ abstract class TormBase<D extends Driver> {
     for (const model of this.model_registry) {
       model.prepare_queries(driver)
     }
+  }
+  private version_less_than(version_prev: string, version_next: string) {
+    const result = semver.compare(version_prev, version_next)
+    console.log('version_less_than', version_prev, '<', version_next, result)
+    return result < 0
   }
 }
 
