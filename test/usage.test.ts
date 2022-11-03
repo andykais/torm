@@ -1,5 +1,4 @@
-import { assertEquals as assert_equals } from "https://deno.land/std@0.155.0/testing/asserts.ts";
-import { expectType } from "https://cdn.skypack.dev/ts-expect?dts"
+import { test, assert_equals, expect_type } from './util.ts'
 
 import { schema, z } from '../src/mod.ts'
 import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite-native/mod.ts'
@@ -82,7 +81,8 @@ class BookORM extends Torm {
 // console.log(`Final table schema: ${torm.schemas.tables()}`)
 
 
-Deno.test('usage', async () => {
+
+test('usage', async () => {
   await Deno.remove('test/fixtures/usage.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
   const db = new BookORM('test/fixtures/usage.db')
   await db.init()
@@ -91,7 +91,7 @@ Deno.test('usage', async () => {
   db.book.create({ title: 'The Hobbit', author_id: (info as any).last_insert_row_id, data: {some: 'data'} })
 
   const book_row = db.book.get({ id: 1 })
-  expectType<{ id: number; title: string; author_id: number }>(book_row)
+  expect_type<{ id: number; title: string; author_id: number }>(book_row)
   assert_equals(book_row.title, 'The Hobbit')
   assert_equals(book_row.data, {some: 'data'})
 
@@ -101,18 +101,16 @@ Deno.test('usage', async () => {
   assert_equals(books_and_authors[0]['first_name'], 'JR')
   assert_equals(books_and_authors[0]['last_name'], 'Tolkein')
 
-  db.driver.close()
+  db.close()
 })
 
-Deno.test({
-  name: 'migrations',
-  fn: async () => {
+test('migrations', async () => {
     await Deno.remove('test/fixtures/migrations.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
     const db = new BookORM('test/fixtures/migrations.db')
     await db.init()
 
-    console.log(db.schemas.version())
-    db.driver.close()
+    assert_equals('1.1.0', db.schemas.version())
+    db.close()
 
     class Book_V2 extends Model('book', {
       id:           field.number(),
@@ -133,8 +131,6 @@ Deno.test({
 
     const db_v2 = new BookORM_V2('test/fixtures/migrations.db')
     await db_v2.init()
-    console.log(db_v2.schemas.version())
-    db_v2.driver.close()
-  },
- only: true
-})
+    assert_equals('1.1.1', db_v2.schemas.version())
+    db_v2.close()
+  })

@@ -171,6 +171,8 @@ class Torm extends TormBase<sqlite_native.Database> {
     this.schemas.version()
   }
 
+  public close() { this.driver.close() }
+
   protected schemas_class = SchemasModelImpl
   public schemas = new SchemasModelImpl()
 }

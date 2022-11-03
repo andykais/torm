@@ -41,6 +41,7 @@ abstract class TormBase<D extends Driver> {
 
   protected abstract schemas_class: typeof SchemasModel
   public abstract schemas: SchemasModel
+  public abstract close(): void
 
   public init(driver: D) {
     this._driver = driver
@@ -70,7 +71,7 @@ abstract class TormBase<D extends Driver> {
             migration.call()
           }
         }
-      } else if (this.version_less_than(current_version, application_version)) {
+      } else if (semver.lt(current_version, application_version)) {
         const migrations = (thisConstructor.migrations?.upgrades ?? []).map(m => new m())
         migrations.sort((a, b) => semver.compare(a.version, b.version))
         for (const migration of migrations) {
@@ -79,7 +80,15 @@ abstract class TormBase<D extends Driver> {
             migration.call()
           }
         }
-
+        const model_migrations = this.model_class_registry
+          .flatMap(m => m.migrations?.upgrades ?? [])
+          .map(m => new m())
+          .filter(migration => semver.gt(migration.version, current_version))
+        model_migrations.sort((a, b) => semver.compare(a.version, b.version))
+        for (const migration of model_migrations) {
+          migration.prepare_queries(driver)
+          migration.call()
+        }
       }
       this.schemas.unsafe_version_set(application_version)
     }
@@ -87,11 +96,6 @@ abstract class TormBase<D extends Driver> {
     for (const model of this.model_registry) {
       model.prepare_queries(driver)
     }
-  }
-  private version_less_than(version_prev: string, version_next: string) {
-    const result = semver.compare(version_prev, version_next)
-    console.log('version_less_than', version_prev, '<', version_next, result)
-    return result < 0
   }
 }
 
