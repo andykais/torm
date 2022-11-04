@@ -104,9 +104,11 @@ class SchemasModelImpl extends Model('__torm_metadata__', {
   }
 
   tables() {
-    return this._tables.all({})
+    const tables = this._tables.all({})
       .filter(row => row.sql !== null) // skip the builtin auto definitions
       .map(this.parse_table_sql)
+    tables.sort((a, b) => a.table_name.localeCompare(b.table_name))
+    return tables
   }
 
   private parse_table_sql = (row: { name: string; sql: string }) => {
