@@ -5,17 +5,23 @@ import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, SchemaOutput 
 import { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { ColumnInput } from './query.ts'
 import type { MigrationClass, MigrationRegistry } from './migration.ts'
+import type { TormBase } from './torm.ts'
+
+interface ModelOptions {
+  override_torm_status: boolean
+}
 
 interface ModelClass {
   migrations?: typeof ModelBase.migrations
-  new (): ModelBase
+  // new (torm: TormBase<Driver>, options: ModelOptions): ModelBase
+  new (torm: TormBase<Driver>): ModelBase
 }
 interface ModelInstance {
-  prepare_queries: (driver: Driver) => void
+  prepare_queries: (driver?: Driver) => void
 }
 
 abstract class ModelBase implements ModelInstance {
-  private _driver: Driver | null = null
+  private _torm: TormBase<Driver> | null = null
   private registered_stmts: Statement<any, any>[] = []
 
   static migrations?: {
@@ -23,16 +29,17 @@ abstract class ModelBase implements ModelInstance {
     upgrades?: MigrationClass[]
   }
 
-  public prepare_queries(driver: Driver) {
-    this._driver = driver
+  // public constructor(protected torm: TormBase<Driver>, private options: ModelOptions) {}
+  public constructor(protected torm: TormBase<Driver>) {}
+
+  public prepare_queries(driver?: Driver) {
     for (const stmt of this.registered_stmts) {
-      stmt.prepare_query(driver)
+      stmt.prepare_query(driver ?? this.driver)
     }
   }
 
   public get driver() {
-    if (this._driver) return this._driver
-    else throw new Error('A driver cannot be instantiated until init() is called')
+    return this.torm.driver
   }
 
   protected query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
