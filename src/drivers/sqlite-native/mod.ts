@@ -7,11 +7,12 @@ import { SQLiteNativeDriver as Database } from '../../dependencies.ts'
 import { MigrationBase, type MigrationClass } from '../../migration.ts'
 import { field } from '../../mod.ts'
 
-type PreparedStatement = sqlite_native.PreparedStatement<any>
 
+class Statement<
+    Params extends SchemaGeneric,
+    Result extends SchemaGeneric
+  > extends StatementBase<sqlite_native.PreparedStatement, Params, Result> {
 
-
-class Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> extends StatementBase<PreparedStatement, Params, Result> {
   public one = (params: Params) => {
     const row = this.stmt.one(this.encode_params(params))
     if (row) return this.decode_result(row)

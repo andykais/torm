@@ -30,6 +30,7 @@ abstract class TormBase<D extends Driver> {
   private _migrations?: {
     initialization: MigrationInstance[]
     upgrades: MigrationInstance[]
+    finalize_migration: () => void
   }
 
   static migrations?: {
@@ -80,7 +81,9 @@ abstract class TormBase<D extends Driver> {
       upgrades: (thisConstructor.migrations?.upgrades ?? [])
       .concat(this.model_class_registry
         .flatMap(model_class => model_class.migrations?.upgrades ?? []))
-      .map(migration_class => new migration_class(this))
+      .map(migration_class => new migration_class(this)),
+
+      finalize_migration: this.initialize_models,
     }
 
     const { auto_migrate = true } = options ?? {}
@@ -100,12 +103,16 @@ abstract class TormBase<D extends Driver> {
       if (Migration.outdated(this)) {
         this.status = 'outdated'
       } else {
-        for (const model of this.model_registry) {
-          model.prepare_queries()
-        }
+        this.initialize_models()
         this.schemas.unsafe_version_set(application_version)
         this.status = 'initialized'
       }
+    }
+  }
+
+  private initialize_models = () => {
+    for (const model of this.model_registry) {
+      model.prepare_queries()
     }
   }
 }

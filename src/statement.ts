@@ -3,6 +3,7 @@ import type { Merge } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
 import type { Driver, Constructor } from './util.ts'
 import type { FieldInput } from './field.ts'
+import { z } from './dependencies.ts'
 
 type ExtractParamsInputs<T> =
   T extends ParamsField<BuiltSchemaField<infer Name, any>>
@@ -32,6 +33,11 @@ export type StatementResult<T extends ColumnInput[]> =
         : never
     >
 
+
+type ColumnValue = string | number | bigint | Uint8Array | null;
+interface RawRowData {
+  [field_name: string]: ColumnValue
+}
 
 export interface Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> {
     one: (params: Params) => Result
@@ -70,21 +76,41 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
 
   protected encode_params = (params: Params) => {
     const encoded_params: {[field: string]: any} = {}
-    for (const [key, val] of Object.entries(params)) {
-      const field = this.get_param_field(key)
-      encoded_params[key] = field.data_transformers.encode(val)
+    for (const [field_name, val] of Object.entries(params)) {
+      const field = this.get_param_field(field_name)
+      try {
+        encoded_params[field_name] = field.data_transformers.call_encode(val)
+      } catch (e) {
+        if (e instanceof z.ZodError) {
+          const message = e.format()._errors.join(',')
+          throw new TypeError(`${message} on column ${field.table_name}.${field.field_name}:\n${Deno.inspect(params, { colors: true })}`)
+        } else {
+          throw e
+        }
+      }
     }
     return encoded_params
   }
 
-  protected decode_result = (result: Result): Result => {
+  protected decode_result = (result: RawRowData): Result => {
     const decoded_result: {[field: string]: any} = {}
-    for (const [key, val] of Object.entries(result)) {
-      const field = this.get_result_field(key)
-      if (field.data_transformers.decode) {
-        decoded_result[key] = field.data_transformers.decode(val)
-      } else {
-        decoded_result[key] = val
+    for (const [field_name, val] of Object.entries(result)) {
+      const field = this.get_result_field(field_name)
+      try {
+        const field = this.get_result_field(field_name)
+        decoded_result[field_name] = field.data_transformers.call_decode(val)
+        // if (field.data_transformers.decode) {
+        //   decoded_result[field_name] = field.data_transformers.decode(val)
+        // } else {
+        //   decoded_result[field_name] = val
+        // }
+      } catch (e) {
+        if (e instanceof z.ZodError) {
+          const message = e.format()._errors.join(',')
+          throw new TypeError(`${message} on column ${field.table_name}.${field.field_name}:\n${Deno.inspect(result, { colors: true })}`)
+        } else {
+          throw e
+        }
       }
     }
     // I dont know how to convert these partial types into full types, so we just cast here

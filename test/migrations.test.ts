@@ -25,10 +25,11 @@ class Book extends Model('book', {
   id:           field.number(),
   author_id:    field.number(),
   title:        field.string(),
-  data:         field.json(),
-  published_at: field.datetime(),
+  data:         field.json().optional(),
+  published_at: field.datetime().optional(),
 }) {
   get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
+  find = this.query`SELECT ${Book.result['*']} FROM book`.all
 }
 class BookORM extends Torm {
   static migrations = {
@@ -96,11 +97,19 @@ test('manual migration', async () => {
   await db_old.init({ auto_migrate: false })
   assert_equals('1.0.0', db_old.schemas.version())
   assert_equals(true, Migration.outdated(db_old))
-  Migration.upgrade(db_old)
+  Migration.upgrade(db_old) // migrating to the most recent version will also initialize models
   assert_equals('1.2.0', db_old.schemas.version())
   assert_equals(false, Migration.outdated(db_old))
-  const tables_old = db_old.schemas.tables()
 
+  assert_equals([{
+    id: 1,
+    author_id: 1,
+    title: "The Hobbit",
+    data: { some: "data" },
+    published_at: null
+  }], db_old.book.find({}))
+
+  const tables_old = db_old.schemas.tables()
   assert_equals(db_new.schemas.version(), db_old.schemas.version())
   assert_equals(tables_new, tables_old)
 

@@ -7,6 +7,9 @@ export interface FieldDefinition<In, Out extends ColumnValue> {
   encode: (val: In) => Out
   decode?: (val: Out) => In
 
+  call_encode: (val: In) => Out
+  call_decode: (val: Out) => In
+
   is_optional: boolean
 }
 
@@ -23,13 +26,45 @@ export type FieldOutput<F extends FieldDefinition<any, any>> =
 abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements FieldDefinition<In, Out> {
   optional() {
     this.is_optional = true
-    return this
+    return new OptionalField<In, Out>(this)
   }
 
   is_optional = false
 
   public abstract encode: (val: In) => Out
   public abstract decode?: (val: Out) => In
+
+  public call_encode(val: In): Out {
+    const val_is_empty = val === undefined || val === null
+    if (val_is_empty && this.is_optional) return null as Out
+    else return this.encode(val)
+  }
+
+  public call_decode(val: Out): In {
+    const val_is_empty = val === undefined || val === null
+    if (val_is_empty && this.is_optional) return null as In
+    else if (this.decode) return this.decode(val)
+    // we have to cast here because this is technically incorrect. We have checks elsewhere though that would prevent us from writing a field with a missing decoder which has a different output type than input
+    else return (val as any) as In
+  }
+}
+
+class OptionalField<In, Out extends ColumnValue> extends FieldDefinitionBase<In | null, Out | null> {
+  public constructor(private field_definition: FieldDefinition<In, Out>) {
+    super()
+    this.is_optional = true
+  }
+
+  public encode = (val: In | null): Out | null => {
+    if (val === null) return null
+    else return this.field_definition.encode(val)
+  }
+
+  public decode = (val: Out | null): In | null => {
+    if (val === null) return null
+    else if (this.field_definition.decode) return this.field_definition.decode(val)
+    else return val as In
+  }
 }
 
 class IdentityFieldDefinition<T extends ColumnValue> extends FieldDefinitionBase<T, T> {
