@@ -13,10 +13,10 @@ class Statement<
     Result extends SchemaGeneric
   > extends StatementBase<sqlite_native.PreparedStatement, Params, Result> {
 
-  public one = (params: Params) => {
+  public one = (params: Params): Result | undefined => {
     const row = this.stmt.one(this.encode_params(params))
     if (row) return this.decode_result(row)
-    throw new Error('undefined one() is unimplemented')
+    // throw new Error('undefined one() is unimplemented')
   }
 
   public all = (params: Params) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
@@ -94,7 +94,7 @@ class SchemasModelImpl extends Model('__torm_metadata__', {
   }
 
   version() {
-    return this.prepare`SELECT ${SchemasModelImpl.result.version} FROM __torm_metadata__`.one({}).version
+    return this.prepare`SELECT ${SchemasModelImpl.result.version} FROM __torm_metadata__`.one({})!.version
   }
 
   table(table_name: string) {

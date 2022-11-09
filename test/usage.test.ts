@@ -60,13 +60,13 @@ test('usage', async () => {
   const db = new BookORM('test/fixtures/usage.db')
   await db.init()
 
-  const info = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })
-  db.book.create({ title: 'The Hobbit', author_id: (info as any).last_insert_row_id, data: {some: 'data'} })
+  const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })
+  const hobbit_insert = db.book.create({ title: 'The Hobbit', author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
 
-  const book_row = db.book.get({ id: 1 })
-  expect_type<{ id: number; title: string; author_id: number }>(book_row)
-  assert_equals(book_row.title, 'The Hobbit')
-  assert_equals(book_row.data, {some: 'data'})
+  const book_row = db.book.get({ id: hobbit_insert.last_insert_row_id })
+  expect_type<{ id: number; title: string; author_id: number } | undefined>(book_row)
+  assert_equals(book_row!.title, 'The Hobbit')
+  assert_equals(book_row!.data, {some: 'data'})
 
   const books_and_authors = db.book.list_with_author({})
   assert_equals(books_and_authors.length, 1)
@@ -74,9 +74,9 @@ test('usage', async () => {
   assert_equals(books_and_authors[0]['first_name'], 'JR')
   assert_equals(books_and_authors[0]['last_name'], 'Tolkein')
 
-  const author_row = db.author.get({ id: 1 })
-  expect_type<{ id: number; first_name: string | null; last_name: string }>(author_row)
-  author_row.first_name
+  const author_row = db.author.get({ id: tolkien_insert.last_insert_row_id })
+  expect_type<{ id: number; first_name: string | null; last_name: string } | undefined>(author_row)
+  assert_equals('Tolkein', author_row!.last_name)
 
   db.close()
 })
