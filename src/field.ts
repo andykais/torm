@@ -27,7 +27,6 @@ abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements Field
   }
 
   default(val: In) {
-    console.log('FieldDefinitionBase.default')
     return new DefaultField<In, Out>(this, val)
   }
 
@@ -52,13 +51,11 @@ class OptionalField<In, Out extends ColumnValue> extends FieldDefinitionBase<In 
   }
 
   public encode = (val: In | null): Out | null => {
-    console.log('OptionalField.encode')
     if (val === null) return null
     else return this.field_definition.encode(val)
   }
 
   public decode = (val: Out | null): In | null => {
-    console.log('OptionalField.decode')
     if (val === null) return null
     else if (this.field_definition.decode) return this.field_definition.decode(val)
     else return val as In
@@ -71,13 +68,11 @@ class DefaultField<In, Out extends ColumnValue> extends FieldDefinitionBase<In |
   }
 
   public encode = (val: In | null | undefined): Out => {
-    console.log('DefaultField encode', { val })
     if (val === null || val === undefined) return this.encode(this.default_value)
     else return this.field_definition.encode(val)
   }
 
   public decode = (val: Out | null): In => {
-    console.log('DefaultField decode', { val })
     if (val === null) return this.default_value
     else if (this.field_definition.decode) return this.field_definition.decode(val)
     else return val as In
