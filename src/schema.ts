@@ -24,29 +24,6 @@ export type BuiltSchemaField<
     data_transformers: DT
 }
 
-type BuiltSchemaMap<T extends SchemaInputGeneric> = {
-    [K in Extract<keyof T, string>]: {
-        table_name: string
-        field_name: K
-        data_transformers: T[K]
-    }
-}
-
-
-export type BuiltSchema<T extends SchemaInputGeneric> = 
-  BuiltSchemaMap<T>
-  & { ['*']: ValueOf<BuiltSchemaMap<T>>[] }
-
-
-type BuiltSchemaParamsMap<T extends SchemaInputGeneric> = {
-  [K in keyof T]: {
-    table_name: string
-    field_name: K
-    data_transformers: T[K]
-  }
-}
-
-
 export type SchemaParams<T extends SchemaInputGeneric> =
   {
     [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K]>>
