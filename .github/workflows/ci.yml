@@ -1,0 +1,43 @@
+name: CI
+
+
+permissions:
+  contents: read
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+env:
+  DENO_DIR: deno_dependency_cache
+
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-12] #, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+
+      - name: Cache Deno dependencies 
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ hashFiles('deno.lock') }}
+
+      # - name: Lint
+      #   run: deno task lint --ignore=deno_dependency_cache
+
+      - name: Test
+        run: deno task test
