@@ -1,5 +1,5 @@
 {
   "tasks": {
-    "test:watch": "deno test --watch --unstable --check --allow-read --allow-write --allow-ffi test"
+    "test:watch": "deno test --watch --unstable --check --allow-read --allow-write --allow-ffi --allow-env=HOME test"
   }
 }
