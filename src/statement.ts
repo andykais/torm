@@ -3,7 +3,7 @@ import type { Merge, OptionalKeys } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
 import type { Driver, Constructor, OptionalOnEmpty } from './util.ts'
 import type { FieldInput } from './field.ts'
-import { z } from './dependencies.ts'
+import { z } from './deps.ts'
 
 type ExtractParamsInputs<T> =
   T extends ParamsField<BuiltSchemaField<infer Name, any>>

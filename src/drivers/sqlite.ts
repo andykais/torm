@@ -1,10 +1,9 @@
 import type { OptionalOnEmpty } from '../util.ts'
 import type { BuiltSchemaField, SchemaGeneric } from '../schema.ts'
-import { sqlite_native } from '../dependencies.ts'
+import * as sqlite_native from 'https://deno.land/x/sqlite_native@1.0.2/mod.ts'
 import { ModelBase, WithStaticSchema } from '../model.ts'
 import { StatementBase } from '../statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../torm.ts'
-import { SQLiteNativeDriver as Database } from '../dependencies.ts'
 import { MigrationBase, type MigrationClass } from '../migration.ts'
 import { field } from '../mod.ts'
 
@@ -44,7 +43,7 @@ const Model = WithStaticSchema(TempModelNonAbstract)
 abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
 
-  static create(version: string, arg: string | ((driver: Database) => void)): MigrationClass {
+  static create(version: string, arg: string | ((driver: sqlite_native.Database) => void)): MigrationClass {
     return class InlineMigration extends Migration {
       version = version
       call = () => {
@@ -61,7 +60,7 @@ class SqliteMasterModel extends Model('sqlite_master', {
 }) {}
 class InitializeTormMetadata extends Migration {
   version = '0.1.0'
-  call(driver?: Database) {
+  call(driver?: sqlite_native.Database) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
     driver.exec(`
       CREATE TABLE IF NOT EXISTS __torm_metadata__ (
@@ -168,7 +167,7 @@ class Torm extends TormBase<sqlite_native.Database> {
   }
 
   public async init(options?: InitOptions) {
-    const driver = new Database(this.db_path, this.options)
+    const driver = new sqlite_native.Database(this.db_path, this.options)
     await driver.connect()
     this._init(driver, options)
     this.schemas.version()
@@ -187,4 +186,5 @@ export {
   Migration,
 }
 
+type Database = sqlite_native.Database
 export type { Database as Driver }

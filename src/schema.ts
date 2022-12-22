@@ -1,4 +1,4 @@
-import { z } from './dependencies.ts'
+import { z } from './deps.ts'
 import type { ValueOf } from './util.ts'
 import { ParamsField, ResultField, type Field } from './query.ts'
 import type { FieldDefinition } from './field.ts'
