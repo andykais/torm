@@ -1,6 +1,5 @@
-import { z } from './deps.ts'
-import type { ValueOf } from './util.ts'
-import { ParamsField, ResultField, type Field } from './query.ts'
+import type { KeyOf, ValueOf } from './util.ts'
+import { ParamsField, ResultField } from './query.ts'
 import type { FieldDefinition } from './field.ts'
 
 export type SchemaInputGeneric = Record<string, FieldDefinition<any, any>>
@@ -47,8 +46,6 @@ export interface SchemaOutput<T extends SchemaInputGeneric> {
   params: SchemaParams<T>
   result: SchemaResult<T>
 }
-
-type KeyOf<T extends object> = Extract<keyof T, string>
 
 function schema<T extends SchemaInputGeneric>(table_name: string, schema: T): SchemaOutput<T> {
   const built_params_schema: Partial<SchemaParams<T>> = {}

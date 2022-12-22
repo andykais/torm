@@ -1,10 +1,10 @@
 import { ParamsField, ResultField } from './query.ts'
 import { schema } from './schema.ts'
 import type { Driver, Constructor } from './util.ts'
-import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, SchemaOutput } from './schema.ts'
+import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric } from './schema.ts'
 import { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { ColumnInput } from './query.ts'
-import type { MigrationClass, MigrationRegistry } from './migration.ts'
+import type { MigrationClass } from './migration.ts'
 import type { TormBase } from './torm.ts'
 
 interface ModelOptions {

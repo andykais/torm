@@ -1,5 +1,5 @@
-import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite.ts'
+import { test, assert_equals } from './util.ts'
+import { Model, Torm, Migration } from '../src/drivers/sqlite.ts'
 import * as field from '../src/field.ts'
 
 

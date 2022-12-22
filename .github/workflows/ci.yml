@@ -36,8 +36,8 @@ jobs:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
 
-      # - name: Lint
-      #   run: deno task lint --ignore=deno_dependency_cache
+      - name: Lint
+        run: deno task lint --ignore=deno_dependency_cache
 
       - name: Test
         run: deno task test
