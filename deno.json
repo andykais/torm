@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "test": "deno test --unstable --check --allow-read --allow-write --allow-ffi --allow-env=HOME --allow-net test",
-    "test:watch": "deno test --watch --unstable --check --allow-read --allow-write --allow-ffi --allow-env=HOME test"
+    "test":       "deno test --unstable --check --allow-read --allow-write --allow-ffi --allow-env=HOME --allow-net test",
+    "test:watch": "deno test --unstable --check --allow-read --allow-write --allow-ffi --allow-env=HOME --allow-net --watch test"
   },
   "lint": {
     "rules": {
