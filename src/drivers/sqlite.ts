@@ -1,6 +1,6 @@
 import type { OptionalOnEmpty } from '../util.ts'
 import type { SchemaGeneric } from '../schema.ts'
-import * as sqlite_native from 'https://deno.land/x/sqlite_native@1.0.2/mod.ts'
+import * as sqlite_native from 'https://deno.land/x/sqlite_native@v1.0.4/mod.ts'
 import { ModelBase, WithStaticSchema } from '../model.ts'
 import { StatementBase } from '../statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../torm.ts'
