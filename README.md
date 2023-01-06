@@ -4,7 +4,7 @@ A typesafe database ORM that exposes the full power of handwritten sql statement
 
 
 ## Getting Started
-```ts
+```js
 import { Torm, Model, field } from 'https://deno.land/x/torm/drivers/sqlite.ts'
 
 
@@ -36,7 +36,7 @@ console.log(row?.title, 'written in', row?.language, 'published on', row?.publis
 
 ## Migrations
 Torm includes a full migration system, which can be declared like so:
-```ts
+```js
 import { Torm, Model, Migration, field } from 'https://deno.land/x/torm/drivers/sqlite.ts'
 
 class Author extends Model('author', {
