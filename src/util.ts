@@ -1,4 +1,4 @@
-import type { Driver as SQLiteNativeDriver } from './drivers/sqlite.ts'
+import type { Driver as SQLiteNativeDriver } from '../drivers/sqlite.ts'
 
 type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
