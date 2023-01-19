@@ -1,6 +1,6 @@
 import type { Constructor, Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
-import type { MigrationClass } from './migration.ts'
+import type { Version, MigrationClass, MigrationRegistry } from './migration.ts'
 import { ModelBase } from './model.ts'
 import * as semver from "https://deno.land/std@0.161.0/semver/mod.ts";
 

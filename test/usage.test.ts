@@ -1,16 +1,14 @@
 import { test, assert_equals, expect_type } from './util.ts'
-
-import { schema, z } from '../src/mod.ts'
 import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite-native/mod.ts'
 import * as field from '../src/field.ts'
 
 class Author extends Model('author', {
   id:         field.number(),
-  first_name: field.string(),
+  first_name: field.string().optional(),
   last_name:  field.string(),
 }) {
   static migrations = {
-    initialization: Migration.create('1.1.0', `
+    initialization: Migration.create('1.0.0', `
       CREATE TABLE IF NOT EXISTS author (
         id INTEGER NOT NULL PRIMARY KEY,
         first_name TEXT,
@@ -29,7 +27,7 @@ class Book extends Model('book', {
   data:       field.json(),
 }) {
   static migrations = {
-    initialization: Migration.create('1.1.0', `
+    initialization: Migration.create('1.0.0', `
       CREATE TABLE IF NOT EXISTS book (
         id INTEGER NOT NULL PRIMARY KEY,
         author_id INTEGER NOT NULL,
@@ -47,38 +45,13 @@ class Book extends Model('book', {
     INNER JOIN author ON author_id = Author.id`.all
 }
 
-// const add_published_at_field_migration = migration('1.1.0', (driver: Driver) => {
-//   driver.exec(`ALTER TABLE book ADD COLUMN published_at DATETIME`)
-// })
-
-class AddPublishedAtFieldMigration extends Migration {
-  version = '1.1.0' as const
-
-  call() {
-    this.driver.exec(`ALTER TABLE book ADD COLUMN published_at DATETIME`)
-  }
-}
-
-
 class BookORM extends Torm {
-  static migrations = {
-    version: '1.1.0',
-    // initialization: InitializeSchemasMigration,
-    // upgrades: [AddPublishedAtFieldMigration],
-  }
+  static migrations = { version: '1.0.0' }
 
   // models
   author = this.model(Author)
   book   = this.model(Book)
 }
-
-// const torm = new Torm({ logger, auto_migrate: false })
-// const migrator = Torm.migrate(torm)
-// while (migrator.has_next()) {
-//   console.log(`Migrating from ${torm.schemas.version()} to ${migrator.next_version()}`)
-//   migrator.next()
-// }
-// console.log(`Final table schema: ${torm.schemas.tables()}`)
 
 
 
@@ -101,36 +74,9 @@ test('usage', async () => {
   assert_equals(books_and_authors[0]['first_name'], 'JR')
   assert_equals(books_and_authors[0]['last_name'], 'Tolkein')
 
+  const author_row = db.author.get({ id: 1 })
+  expect_type<{ id: number; first_name: string | null; last_name: string }>(author_row)
+  author_row.first_name
+
   db.close()
 })
-
-test('migrations', async () => {
-    await Deno.remove('test/fixtures/migrations.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
-    const db = new BookORM('test/fixtures/migrations.db')
-    await db.init()
-
-    assert_equals('1.1.0', db.schemas.version())
-    db.close()
-
-    class Book_V2 extends Model('book', {
-      id:           field.number(),
-      author_id:    field.number(),
-      title:        field.string(),
-      data:         field.json(),
-      published_at: field.datetime(),
-    }) {
-      get = this.query`SELECT ${Book_V2.result['*']} FROM book WHERE id = ${Book_V2.params.id}`.one
-    }
-    class BookORM_V2 extends Torm {
-      static migrations = {
-        version: '1.1.1',
-        upgrades: [Migration.create('1.1.1', 'ALTER TABLE book ADD COLUMN published_at DATETIME')]
-      }
-      book = this.model(Book_V2)
-    }
-
-    const db_v2 = new BookORM_V2('test/fixtures/migrations.db')
-    await db_v2.init()
-    assert_equals('1.1.1', db_v2.schemas.version())
-    db_v2.close()
-  })

@@ -4,7 +4,7 @@ import type { Driver, Constructor } from './util.ts'
 import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, SchemaOutput } from './schema.ts'
 import { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { ColumnInput } from './query.ts'
-import type { MigrationClass } from './migration.ts'
+import type { MigrationClass, MigrationRegistry } from './migration.ts'
 
 interface ModelClass {
   migrations?: typeof ModelBase.migrations
