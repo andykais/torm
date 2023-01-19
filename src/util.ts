@@ -4,11 +4,14 @@ type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
     ? T[K]
     : never;
+
+// deno-lint-ignore ban-types
 export type Merge<T extends object> = {
   [k in AllKeys<T>]: PickType<T, k>;
 }
 export type ValueOf<T> = T[keyof T]
 
+// deno-lint-ignore ban-types
 export type Constructor<T = {}> = new (...args: any[]) => T;
 
 export type Driver =
@@ -25,3 +28,6 @@ export type OptionalKeys<T> = TNullProperties<T> & TNotNullProperties<T>
 
 // export type OptionalOnEmpty<T> = keyof T extends never ? ([T] | []) : [T]
 export type OptionalOnEmpty<T> = [keyof T] extends [never] ? [T] | [] : [T];
+
+export type KeyOf<T> = Extract<keyof T, string>
+

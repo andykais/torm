@@ -1,5 +1,5 @@
 import type { OptionalOnEmpty } from '../util.ts'
-import type { BuiltSchemaField, SchemaGeneric } from '../schema.ts'
+import type { SchemaGeneric } from '../schema.ts'
 import * as sqlite_native from 'https://deno.land/x/sqlite_native@1.0.2/mod.ts'
 import { ModelBase, WithStaticSchema } from '../model.ts'
 import { StatementBase } from '../statement.ts'
@@ -30,8 +30,6 @@ class Statement<
     return new Statement<Params, Result>(sql, params, result)
   }
 }
-
-type Constructor<T> = Function & { prototype: T }
 
 // TODO see if we can make this abstract for the mixin
 abstract class DriverModel extends ModelBase {

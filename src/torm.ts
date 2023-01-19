@@ -1,6 +1,6 @@
-import type { Constructor, Driver } from './util.ts'
+import type { Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
-import type { Version, MigrationClass, MigrationInstance, MigrationRegistry } from './migration.ts'
+import type { MigrationClass, MigrationInstance } from './migration.ts'
 import { ModelBase } from './model.ts'
 import { MigrationBase } from './migration.ts';
 
