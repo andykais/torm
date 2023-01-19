@@ -22,3 +22,6 @@ type TNotNullProperties<T> = {
   [K in keyof T as null extends T[K] ? never : K]: T[K];
 }
 export type OptionalKeys<T> = TNullProperties<T> & TNotNullProperties<T>
+
+// export type OptionalOnEmpty<T> = keyof T extends never ? ([T] | []) : [T]
+export type OptionalOnEmpty<T> = [keyof T] extends [never] ? [T] | [] : [T];

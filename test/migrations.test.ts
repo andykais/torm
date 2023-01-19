@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite-native/mod.ts'
+import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite-native.ts'
 import * as field from '../src/field.ts'
 
 

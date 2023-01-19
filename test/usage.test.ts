@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite-native/mod.ts'
+import { Model, Torm, Migration, type Driver } from '../src/drivers/sqlite-native.ts'
 import * as field from '../src/field.ts'
 
 class Author extends Model('author', {
@@ -29,7 +29,7 @@ class Book extends Model('book', {
 }) {
   static migrations = {
     initialization: Migration.create('1.0.0', `
-      CREATE TABLE IF NOT EXISTS book (
+      CREATE TABLE book (
         id INTEGER NOT NULL PRIMARY KEY,
         author_id INTEGER NOT NULL,
         title TEXT NOT NULL,
@@ -40,7 +40,6 @@ class Book extends Model('book', {
   }
 
   create = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec
-  create_test = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`
   get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
 
   list_with_author = this.query`
@@ -77,7 +76,7 @@ test('usage', async () => {
     language: 'english',
   }, book_row)
 
-  const books_and_authors = db.book.list_with_author({})
+  const books_and_authors = db.book.list_with_author()
   assert_equals(books_and_authors.length, 1)
   assert_equals(books_and_authors[0]['title'], 'The Hobbit')
   assert_equals(books_and_authors[0]['first_name'], 'JR')

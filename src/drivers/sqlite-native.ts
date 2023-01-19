@@ -1,11 +1,12 @@
-import { sqlite_native } from '../../dependencies.ts'
-import type { BuiltSchemaField, SchemaGeneric } from '../../schema.ts'
-import { ModelBase, WithStaticSchema } from '../../model.ts'
-import { StatementBase } from '../../statement.ts'
-import { TormBase, type SchemasModel, type InitOptions } from '../../torm.ts'
-import { SQLiteNativeDriver as Database } from '../../dependencies.ts'
-import { MigrationBase, type MigrationClass } from '../../migration.ts'
-import { field } from '../../mod.ts'
+import type { OptionalOnEmpty } from '../util.ts'
+import type { BuiltSchemaField, SchemaGeneric } from '../schema.ts'
+import { sqlite_native } from '../dependencies.ts'
+import { ModelBase, WithStaticSchema } from '../model.ts'
+import { StatementBase } from '../statement.ts'
+import { TormBase, type SchemasModel, type InitOptions } from '../torm.ts'
+import { SQLiteNativeDriver as Database } from '../dependencies.ts'
+import { MigrationBase, type MigrationClass } from '../migration.ts'
+import { field } from '../mod.ts'
 
 
 class Statement<
@@ -13,16 +14,16 @@ class Statement<
     Result extends SchemaGeneric
   > extends StatementBase<sqlite_native.PreparedStatement, Params, Result> {
 
-  public one = (params: Params): Result | undefined => {
+  public one = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
     const row = this.stmt.one(this.encode_params(params))
     if (row) return this.decode_result(row)
     // throw new Error('undefined one() is unimplemented')
   }
 
-  public all = (params: Params) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
+  public all = (...[params]: OptionalOnEmpty<Params>) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
 
 
-  public exec = (params: Params) => this.stmt.exec(this.encode_params(params))
+  public exec = (...[params]: OptionalOnEmpty<Params>) => this.stmt.exec(this.encode_params(params))
 
   protected prepare = (sql: string) => this.driver.prepare(sql)
 

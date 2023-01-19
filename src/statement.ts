@@ -1,7 +1,7 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge, OptionalKeys } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
-import type { Driver, Constructor } from './util.ts'
+import type { Driver, Constructor, OptionalOnEmpty } from './util.ts'
 import type { FieldInput } from './field.ts'
 import { z } from './dependencies.ts'
 
@@ -16,15 +16,15 @@ type ExtractResultInputs<T> =
     : never
 
 export type StatementParams<T extends ColumnInput[]> =
-  OptionalKeys<
-    Merge<
-      T extends Array<infer G>
-        ? G extends Array<infer B>
-          ? ExtractParamsInputs<B>
-          : ExtractParamsInputs<G>
-        : never
+    OptionalKeys<
+      Merge<
+        T extends Array<infer G>
+          ? G extends Array<infer B>
+            ? ExtractParamsInputs<B>
+            : ExtractParamsInputs<G>
+          : never
+      >
     >
-  >
 
 export type StatementResult<T extends ColumnInput[]> =
     Merge<
@@ -48,9 +48,9 @@ interface ExecInfo {
 }
 
 export interface Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> {
-    one: (params: Params) => Result | undefined
-    all: (params: Params) => Result[]
-    exec: (params: Params) => ExecInfo
+    one: (...[params]: OptionalOnEmpty<Params>) => Result | undefined
+    all: (...[params]: OptionalOnEmpty<Params>) => Result[]
+    exec: (...[params]: OptionalOnEmpty<Params>) => ExecInfo
     params: Params /* debug only */
     result: Result /* debug only */
 
@@ -82,10 +82,10 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
     else throw new Error('A statement cannot be used until init() is called')
   }
 
-  protected encode_params = (params: Params) => {
+  protected encode_params = (params: Params | undefined) => {
     const encoded_params: {[field: string]: any} = {}
     for (const field of Object.values(this.params)) {
-      const val = params[field.field_name]
+      const val = params ? params[field.field_name] : undefined
       try {
         encoded_params[field.field_name] = field.data_transformers.call_encode(val)
       } catch (e) {
@@ -125,9 +125,9 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
     return decoded_result as Result
   }
 
-  abstract one(params: Params): Result | undefined
-  abstract all(params: Params): Result[]
-  abstract exec(params: Params): ExecInfo
+  abstract one(...[params]: OptionalOnEmpty<Params>): Result | undefined
+  abstract all(...[params]: OptionalOnEmpty<Params>): Result[]
+  abstract exec(...[params]: OptionalOnEmpty<Params>): ExecInfo
   protected abstract prepare(sql: string): DriverStatement
 
   public prepare_query(driver: Driver) {

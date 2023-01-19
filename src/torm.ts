@@ -2,7 +2,7 @@ import type { Constructor, Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
 import type { Version, MigrationClass, MigrationInstance, MigrationRegistry } from './migration.ts'
 import { ModelBase } from './model.ts'
-import { Migration } from './drivers/sqlite-native/mod.ts';
+import { MigrationBase } from './migration.ts';
 
 interface InitOptions {
   auto_migrate?: boolean
@@ -91,16 +91,16 @@ abstract class TormBase<D extends Driver> {
 
     this.schemas.prepare_queries(driver)
 
-    if (Migration.is_new(this)) Migration.initialize(this)
+    if (MigrationBase.is_new(this)) MigrationBase.initialize(this)
 
     if (application_version !== undefined) {
       if (auto_migrate) {
-        while (Migration.outdated(this)) {
+        while (MigrationBase.outdated(this)) {
           this.status = 'outdated'
-          Migration.upgrade(this)
+          MigrationBase.upgrade(this)
         }
       }
-      if (Migration.outdated(this)) {
+      if (MigrationBase.outdated(this)) {
         this.status = 'outdated'
       } else {
         this.initialize_models()
