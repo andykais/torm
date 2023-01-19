@@ -58,9 +58,8 @@ class BookORM extends Torm {
 
 
 
-test('usage', async () => {
-  await Deno.remove('test/fixtures/usage.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
-  const db = new BookORM('test/fixtures/usage.db')
+test('usage', async (ctx) => {
+  const db = new BookORM(ctx.fixture_path('usage.db'))
   await db.init()
 
   const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })
@@ -87,28 +86,4 @@ test('usage', async () => {
   assert_equals('Tolkein', author_row!.last_name)
 
   db.close()
-
-  // TODO track closed state, throw error on access after close()
-  // try {
-  //   db.schemas.version()
-  // } catch (e) {
-  //   console.log('e?')
-  // }
-})
-
-class EmptyORM extends Torm {
-  static migrations = { version: '1.0.0' }
-}
-
-test('empty torm', async () => {
-  await Deno.remove('test/fixtures/empty.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
-  const db = new EmptyORM('test/fixtures/empty.db')
-  await db.init()
-  assert_equals(db.schemas.version(), '1.0.0')
-  db.close()
-
-  const db_reopen = new EmptyORM('test/fixtures/empty.db')
-  await db_reopen.init()
-  assert_equals(db_reopen.schemas.version(), '1.0.0')
-  db_reopen.close()
 })

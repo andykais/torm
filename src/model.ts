@@ -91,8 +91,12 @@ abstract class ModelBase implements ModelInstance {
   protected build_param_sql(schema_field: BuiltSchemaField<string, any>) {
     return `:${schema_field.field_name}`
   }
-  protected build_result_sql(schema_field: BuiltSchemaField<string, any>) {
-    return `${schema_field.table_name}.${schema_field.field_name}`
+  protected build_result_sql(schema_field: ResultField<any>) {
+    if (schema_field.alias_of) {
+      return `${schema_field.table_name}.${schema_field.alias_of} AS '${schema_field.field_name}'`
+    } else {
+      return `${schema_field.table_name}.${schema_field.field_name}`
+    }
   }
   protected build_column_sql(schema_field: BuiltSchemaField<string, any>, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
     if (schema_field instanceof ParamsField) {

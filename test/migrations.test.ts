@@ -59,15 +59,14 @@ class BookORM extends Torm {
 }
 
 
-test('auto migration', async () => {
-  await Deno.remove('test/fixtures/migrations.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
-  await Deno.copyFile('test/resources/migrations_1.0.0.db', 'test/fixtures/migrations_1.0.0.db')
-  let db_new = new BookORM('test/fixtures/migrations.db')
+test('auto migration', async (ctx) => {
+  console.log(ctx.fixture_path('migrations.db'))
+  let db_new = new BookORM(ctx.fixture_path('migrations.db'))
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
 
-  const db_old = new BookORM('test/fixtures/migrations_1.0.0.db')
+  const db_old = new BookORM(ctx.fixture_path('migrations_1.0.0.db'))
   await db_old.init()
   assert_equals('1.2.0', db_old.schemas.version())
   const tables_old = db_old.schemas.tables()
@@ -78,22 +77,23 @@ test('auto migration', async () => {
   db_old.close()
 
   // check that we dont run migrations twice
-  db_new = new BookORM('test/fixtures/migrations.db')
+  db_new = new BookORM(ctx.fixture_path('migrations.db'))
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   assert_equals(tables_new, db_new.schemas.tables())
   db_new.close()
 })
 
-test('manual migration', async () => {
-  await Deno.remove('test/fixtures/migrations.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
-  await Deno.copyFile('test/resources/migrations_1.0.0.db', 'test/fixtures/migrations_1.0.0.db')
+test('manual migration', async (ctx) => {
+  const db_old_path = ctx.fixture_path('migrations_1.0.0.db')
+  await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
+
   const db_new = new BookORM('test/fixtures/migrations.db')
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
 
-  const db_old = new BookORM('test/fixtures/migrations_1.0.0.db')
+  const db_old = new BookORM(db_old_path)
   await db_old.init({ auto_migrate: false })
   assert_equals('1.0.0', db_old.schemas.version())
   assert_equals(true, Migration.outdated(db_old))

@@ -7,6 +7,12 @@ export type ColumnInput =
   | SchemaFieldGeneric[]
 
 
+type AliasResultField<T extends SchemaField, Alias extends string> = ResultField<{
+ table_name: T['table_name']
+ field_name: Alias
+ data_transformers: T['data_transformers'] 
+}>
+
 export class Field<T extends SchemaField> implements SchemaField {
   table_name: T['table_name']
   field_name: T['field_name']
@@ -26,4 +32,19 @@ export class ParamsField<T extends SchemaField> extends Field<T> {
 }
 export class ResultField<T extends SchemaField> extends Field<T> {
   type = 'result' as const
+
+  alias_of: string | undefined
+
+  public constructor(schema_field: T, alias_of?: string) {
+    super(schema_field)
+    this.alias_of = alias_of
+  }
+
+  public as<A extends string>(alias: A): AliasResultField<T, A> {
+    return new ResultField({
+      table_name: this.table_name,
+      field_name: alias,
+      data_transformers: this.data_transformers,
+    }, this.field_name)
+  }
 }

@@ -20,7 +20,6 @@ class Book extends Model('book', {
 
 
 class BookORM extends Torm {
-  static migrations = { version: '1.0.0' }
   book = this.model(Book)
 }
 
