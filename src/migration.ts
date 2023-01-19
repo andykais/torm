@@ -1,4 +1,4 @@
-import { semver } from './dependencies.ts'
+import { semver } from './deps.ts'
 import { ModelBase } from './model.ts'
 import type { Driver } from './util.ts'
 import type { TormBase } from './torm.ts'

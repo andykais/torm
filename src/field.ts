@@ -1,4 +1,4 @@
-import { z } from './dependencies.ts'
+import { z } from './deps.ts'
 
 // accepted column values (for sqlite, for now)
 type ColumnValue = string | number | bigint | Uint8Array | null;

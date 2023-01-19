@@ -1,4 +1,4 @@
-import { z } from './dependencies.ts'
+import { z } from './deps.ts'
 import type { BuiltSchemaField, SchemaFieldGeneric, SchemaField, SchemaParams, SchemaResult } from './schema.ts'
 
 
