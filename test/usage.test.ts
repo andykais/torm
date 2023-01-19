@@ -67,7 +67,7 @@ test('usage', async () => {
 
   const book_row = db.book.get({ id: hobbit_insert.last_insert_row_id })
   // TODO language should be an optional type
-  expect_type<{ id: number; title: string; language: string | null | undefined; author_id: number } | undefined>(book_row)
+  expect_type<{ id: number; title: string; language: string; author_id: number } | undefined>(book_row)
   assert_equals({
     id: hobbit_insert.last_insert_row_id,
     author_id: tolkien_insert.last_insert_row_id,

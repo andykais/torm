@@ -17,8 +17,13 @@ export type FieldInput<F extends FieldDefinition<any, any>> =
     : never
 
 export type FieldOutput<F extends FieldDefinition<any, any>> =
-  F extends FieldDefinition<any, infer Out>
-    ? Out
+  F extends FieldDefinition<any, any>
+    // our field definitions can sometimes return something other than what the input is constrained to (e.g. DefaultField)
+    // this bit of code lets us return whatever it is we decode rather than strictly the `In` type
+    // our types are still technically invalid since for DefaultField they look like In | null | undefined -> Out | null
+    ? F['decode'] extends (...args: any) => infer R
+      ? R
+      : FieldInput<F>
     : never
 
 abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements FieldDefinition<In, Out> {

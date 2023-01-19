@@ -37,7 +37,7 @@ jobs:
           key: ${{ hashFiles('deno.lock') }}
 
       - name: Lint
-        run: deno task lint --ignore=deno_dependency_cache
+        run: deno lint --ignore=deno_dependency_cache
 
       - name: Test
         run: deno task test

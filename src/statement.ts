@@ -2,7 +2,7 @@ import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge, OptionalKeys } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
 import type { Driver, OptionalOnEmpty } from './util.ts'
-import type { FieldInput } from './field.ts'
+import type { FieldInput, FieldOutput } from './field.ts'
 import { z } from './deps.ts'
 
 type ExtractParamsInputs<T> =
@@ -12,7 +12,7 @@ type ExtractParamsInputs<T> =
 
 type ExtractResultInputs<T> =
   T extends ResultField<BuiltSchemaField<infer Name, any>>
-    ? { [K in Name]: FieldInput<T['data_transformers']> } // params and results should both spit out In rather than Out
+    ? { [K in Name]: FieldOutput<T['data_transformers']> } // params and results should both spit out In rather than Out
     : never
 
 export type StatementParams<T extends ColumnInput[]> =
