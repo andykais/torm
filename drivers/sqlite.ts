@@ -1,11 +1,11 @@
-import type { OptionalOnEmpty } from '../util.ts'
-import type { SchemaGeneric } from '../schema.ts'
 import * as sqlite_native from 'https://deno.land/x/sqlite_native@v1.0.4/mod.ts'
-import { ModelBase, WithStaticSchema } from '../model.ts'
-import { StatementBase } from '../statement.ts'
-import { TormBase, type SchemasModel, type InitOptions } from '../torm.ts'
-import { MigrationBase, type MigrationClass } from '../migration.ts'
-import { field } from '../mod.ts'
+import type { OptionalOnEmpty } from '../src/util.ts'
+import type { SchemaGeneric } from '../src/schema.ts'
+import { ModelBase, WithStaticSchema } from '../src/model.ts'
+import { StatementBase } from '../src/statement.ts'
+import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
+import { MigrationBase, type MigrationClass } from '../src/migration.ts'
+import { field } from '../src/mod.ts'
 
 
 class Statement<

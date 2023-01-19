@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, field } from '../src/drivers/sqlite.ts'
+import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
 
 class Author extends Model('author', {
   id:         field.number(),
