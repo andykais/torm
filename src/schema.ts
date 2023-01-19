@@ -60,7 +60,7 @@ export type SchemaParams<T extends SchemaInputGeneric> = BuiltNominalSchema<T, '
 export type SchemaResult<T extends SchemaInputGeneric> = BuiltNominalSchema<T, 'result'>
 
 
-interface SchemaOutput<T extends SchemaInputGeneric> {
+export interface SchemaOutput<T extends SchemaInputGeneric> {
   params: SchemaParams<T>
   result: SchemaResult<T>
 }

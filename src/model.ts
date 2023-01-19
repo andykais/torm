@@ -1,6 +1,7 @@
 import { ParamsField, ResultField } from './query.ts'
-import type { Driver } from './util.ts'
-import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
+import { schema } from './schema.ts'
+import type { Driver, Constructor } from './util.ts'
+import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, SchemaOutput } from './schema.ts'
 import type { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { ColumnInput } from './query.ts'
 
@@ -10,7 +11,7 @@ abstract class ModelBase {
   }
 
   // TODO rename to 'prepare'?
-  query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+  protected query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const params_fields: SchemaGeneric = {}
     const result_fields: SchemaGeneric = {}
 
@@ -25,15 +26,8 @@ abstract class ModelBase {
       sql_string += column_inputs + string_part
     }
 
-    // TODO fill in params
     const stmt = this.prepare(sql_string, params_fields as StatementParams<T>, result_fields as StatementResult<T>)
     return stmt
-    // return {
-    //   one:  (params: {}) => ({} as any),
-    //   all:  (params: {}) => [],
-    //   exec: (params: {}) => {},
-    //   params: {} as StatementParams<T>
-    // }
   }
 
   protected abstract prepare<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, results: Result): Statement<Params, Result>
@@ -73,4 +67,14 @@ abstract class ModelBase {
   }
 }
 
-export { ModelBase }
+const WithStaticSchema =
+  <Class extends Constructor>(base: Class) =>
+    <T extends SchemaInputGeneric>(table_name: string, schema_input: T) => {
+      return class IncludingStaticSchema extends base {
+        static schema = schema(table_name, schema_input)
+        static params = IncludingStaticSchema.schema.params
+        static result = IncludingStaticSchema.schema.result
+      }
+    }
+
+export { ModelBase, WithStaticSchema }

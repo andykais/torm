@@ -40,6 +40,21 @@ export interface Statement<Params extends SchemaGeneric, Result extends SchemaGe
 
 abstract class StatementBase<Params extends SchemaGeneric, Result extends SchemaGeneric> implements Statement<Params, Result> {
 
+  private get_param(field_name: string) {
+    const field = this.params[field_name]
+    if (field) return field
+    throw new Error(`Field ${field_name} does not exist in params list (${Object.keys(this.params)})`)
+  }
+
+  protected encode_params(params: Params) {
+    const encoded_params: {[field: string]: any} = {}
+    for (const [key, val] of Object.entries(params)) {
+      const field = this.get_param(key)
+      encoded_params[key] = this.params[key].encode.parse(val)
+    }
+    return encoded_params
+  }
+
     abstract one(params: Params): Result
     abstract all(params: Params): Result[]
     abstract exec(params: Params): void
