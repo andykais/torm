@@ -80,7 +80,7 @@ const AddAuthorIdColumnMigration = Migration.create('1.1.0', db => db.exec('ALTE
 class BookORM extends Torm {
   static migrations = {
     version: '1.1.0',
-    // an initialization migration is ran on the first database init() call, the first time the database is created
+    // an initialization migration is ran on init(), the first time the database is created
     initialization: InitializationMigration,
     // upgrades are ran when the connected database has an outdated version number
     // upgrades run in order of their semver versions.
