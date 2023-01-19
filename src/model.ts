@@ -36,29 +36,31 @@ abstract class ModelBase {
     if (Array.isArray(column_input)) {
       const built_columns_sql: string[] = []
       for (const column of column_input) {
-        const column_sql = this.build_column_sql(column)
-        params_fields[column.field_name] = column
+        const column_sql = this.build_column_sql(column, params_fields, result_fields)
         built_columns_sql.push(column_sql)
       }
       return this.build_column_array_sql(built_columns_sql)
     } else {
-      const column_sql = this.build_column_sql(column_input)
-      params_fields[column_input.field_name] = column_input
+      const column_sql = this.build_column_sql(column_input, params_fields, result_fields)
       return column_sql
     }
   }
 
-  protected build_param_sql(schema_field: BuiltSchemaField<string, any, any>) {
+  protected build_param_sql(schema_field: BuiltSchemaField<string, any>) {
     return `:${schema_field.field_name}`
   }
-  protected build_result_sql(schema_field: BuiltSchemaField<string, any, any>) {
+  protected build_result_sql(schema_field: BuiltSchemaField<string, any>) {
     return `${schema_field.table_name}.${schema_field.field_name}`
   }
-  protected build_column_sql(schema_field: BuiltSchemaField<string, any, any>) {
+  protected build_column_sql(schema_field: BuiltSchemaField<string, any>, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
     if (schema_field instanceof ParamsField) {
+      params_fields[schema_field.field_name] = schema_field
       return this.build_param_sql(schema_field)
-    } else {
+    } else if (schema_field instanceof ResultField) {
+      result_fields[schema_field.field_name] = schema_field
       return this.build_result_sql(schema_field)
+    } else {
+      throw new Error(`Unexpected schema_field ${schema_field}`)
     }
   }
 

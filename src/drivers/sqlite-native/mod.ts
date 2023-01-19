@@ -9,10 +9,10 @@ class Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> exte
     super()
   }
 
-  one = (params: Params) => this.stmt.one(this.encode_params(params))
+  one = (params: Params) => this.decode_result(this.stmt.one(this.encode_params(params)))
 
 
-  all = (params: Params) => this.stmt.all(this.encode_params(params))
+  all = (params: Params) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
 
 
   exec = (params: Params) => this.stmt.exec(this.encode_params(params))

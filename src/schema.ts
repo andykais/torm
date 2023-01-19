@@ -1,13 +1,15 @@
 import { z } from './dependencies.ts'
 import type { ZodInput, ValueOf } from './util.ts'
 import { ParamsField, ResultField, type Field } from './query.ts'
+import type { FieldDefinition } from './field.ts'
 
-export type SchemaInputGeneric = Record<string, z.ZodSchema<any, any, any>>
+export type SchemaInputGeneric = Record<string, FieldDefinition<any, any>>
 export type SchemaField = {
   table_name: string
   field_name: string
-  encode: z.ZodSchema<any, any, any>
-  decode: z.ZodSchema<any, any, any>
+  data_transformers: FieldDefinition<any, any>
+  // encode?: z.ZodSchema<any, any, any>
+  // decode?: z.ZodSchema<any, any, any>
 }
 export type SchemaFieldGeneric = ParamsField<SchemaField> | ResultField<SchemaField>
 
@@ -17,20 +19,24 @@ export type SchemaGeneric = {
 
 export type BuiltSchemaField<
   Name extends string,
-  Encode extends z.ZodSchema<any, any, any>,
-  Decode extends z.ZodSchema<any, any, any>> = {
+  DT extends FieldDefinition<any, any>
+  // Encode extends z.ZodSchema<any, any, any>,
+  // Decode extends z.ZodSchema<any, any, any>
+  > = {
     table_name: string
     field_name: Name
-    encode: Encode
-    decode: Decode
+    data_transformers: DT
+    // encode: Encode
+    // decode: Decode
 }
 
 type BuiltSchemaMap<T extends SchemaInputGeneric> = {
     [K in Extract<keyof T, string>]: {
         table_name: string
         field_name: K
-        encode: T[K]
-        decode: T[K]
+        data_transformers: T[K]
+        // encode: T[K]
+        // decode: T[K]
     }
 }
 
@@ -44,27 +50,28 @@ type BuiltSchemaParamsMap<T extends SchemaInputGeneric> = {
   [K in keyof T]: {
     table_name: string
     field_name: K
-    encode: T[K]
-    decode: T[K]
+    data_transformers: T[K]
+    // encode: T[K]
+    // decode: T[K]
   }
 }
 
 
 export type SchemaParams<T extends SchemaInputGeneric> =
   {
-    [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K], T[K]>>
+    [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K]>>
   } & {
     ['*']: ValueOf<{
-      [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K], T[K]>>
+      [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K]>>
     }>
   }
 
 export type SchemaResult<T extends SchemaInputGeneric> =
   {
-    [K in Extract<keyof T, string>]: ResultField<BuiltSchemaField<K, T[K], T[K]>>
+    [K in Extract<keyof T, string>]: ResultField<BuiltSchemaField<K, T[K]>>
   } & {
     ['*']: ValueOf<{
-      [K in Extract<keyof T, string>]: ResultField<BuiltSchemaField<K, T[K], T[K]>>
+      [K in Extract<keyof T, string>]: ResultField<BuiltSchemaField<K, T[K]>>
     }>
   }
 
@@ -84,8 +91,9 @@ function schema<T extends SchemaInputGeneric>(table_name: string, schema: T): Sc
     const schema_field: SchemaField = {
       table_name,
       field_name: field as string,
-      encode: schema[field],
-      decode: schema[field],
+      data_transformers: schema[field],
+      // encode: schema[field],
+      // decode: schema[field],
     }
     // TODO make typesafe
     built_params_schema[field as KeyOf<T>] = new ParamsField(schema_field) as any
