@@ -1,5 +1,5 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
-import type { Merge } from './util.ts'
+import type { Merge, OptionalKeys } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
 import type { Driver, Constructor } from './util.ts'
 import type { FieldInput } from './field.ts'
@@ -16,6 +16,7 @@ type ExtractResultInputs<T> =
     : never
 
 export type StatementParams<T extends ColumnInput[]> =
+  OptionalKeys<
     Merge<
       T extends Array<infer G>
         ? G extends Array<infer B>
@@ -23,6 +24,7 @@ export type StatementParams<T extends ColumnInput[]> =
           : ExtractParamsInputs<G>
         : never
     >
+  >
 
 export type StatementResult<T extends ColumnInput[]> =
     Merge<
