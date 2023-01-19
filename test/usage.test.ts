@@ -21,12 +21,13 @@ class Book extends Model {
 
   // TODO we need to be able to rename fields. Likely this will be: `${Author.schema.id('author_id')}`
   // TODO columns need to include table name, like author.id
-  get = query`SELECT ${[Book.schema.id, Book.schema.isbn]} FROM book`
+  // get = query`SELECT ${[Book.schema.id, Book.schema.isbn]}, ${Book.schema.title} FROM book`
+  get = query`SELECT ${Book.schema['*']}, ${Author.schema.first_name}  FROM book`
 }
 
 
 Deno.test('usage', async () => {
-  const driver = new Database('test.db')
+  const driver = new Database('test/fixtures/usage.db')
   await driver.connect()
 
   const book = new Book()

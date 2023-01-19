@@ -1,5 +1,5 @@
 import * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
-import type { BuildSchemaField, BuildSchemaFieldGeneric } from './schema.ts'
+import type { BuildSchemaField, BuildSchemaFieldGeneric, ZodInput } from './schema.ts'
 
 type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
@@ -8,6 +8,7 @@ type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
 type Merge<T extends object> = {
   [k in AllKeys<T>]: PickType<T, k>;
 }
+type ValueOf<T> = T[keyof T];
 
 type StatementParams<T extends ColumnInput[]> =
     Merge<
@@ -18,7 +19,7 @@ type StatementParams<T extends ColumnInput[]> =
               : never
           : G extends BuildSchemaField<infer Name, any, any>
             ? { [K in Name]: ZodInput<G['encode']> }
-            : boolean
+            : never
         : never
     >
 
@@ -41,10 +42,5 @@ interface Statement<Params extends {}, Result> {
     exec: (params: Params) => void
     params: Params
 }
-
-type ZodSchema<In, Out> = (param: In) => Out
-type ZodInput<T extends z.ZodSchema<any, any, any>> = T extends z.ZodSchema<infer In, any, any>
-    ? In
-    : never
 
 export { query }
