@@ -1,4 +1,5 @@
 import { assertEquals as assert_equals } from "https://deno.land/std@0.155.0/testing/asserts.ts";
+import { expectType } from "https://cdn.skypack.dev/ts-expect?dts"
 
 import { SQLiteNativeDriver } from '../src/dependencies.ts'
 import { schema, z, torm } from '../src/mod.ts'
@@ -28,6 +29,16 @@ class Book extends Model('book', {
 }
 
 
+// class BookORM extends Torm {
+
+//   author = this.model(Author)
+//   book   = this.model(Book)
+
+
+//   migrations = []
+// }
+
+
 Deno.test('usage', async () => {
   await Deno.remove('test/fixtures/usage.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
   const driver = new SQLiteNativeDriver('test/fixtures/usage.db')
@@ -55,6 +66,7 @@ Deno.test('usage', async () => {
   db.book.create({ title: 'The Hobbit', author_id: (info as any).last_insert_row_id })
 
   const book_row = db.book.get({ id: 1 })
+  expectType<{ id: number; title: string; author_id: number }>(book_row)
   assert_equals(book_row.title, 'The Hobbit')
 
   const books_and_authors = db.book.list_with_author({})

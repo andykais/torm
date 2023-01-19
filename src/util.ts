@@ -1,19 +1,6 @@
 import * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
 import type { SQLiteNativeDriver } from './dependencies.ts'
 
-declare const __nominal__type: unique symbol;
-export type Nominal<Type, Identifier> = Type & {
-  readonly [__nominal__type]: Identifier;
-};
-export type NominalMapUnion<T, Identifier> = T extends any ? Nominal<T, Identifier> : never;
-export type NominalMapObject<T, Identifier> = {
-  [K in keyof T]: Nominal<T[K], Identifier>
-}
-export type ExtractFromNominal<T extends Nominal<any, any>> =
-  T extends Nominal<infer V, any>
-    ? V
-    : never
-
 type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
     ? T[K]

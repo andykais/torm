@@ -36,6 +36,7 @@ export interface Statement<Params extends SchemaGeneric, Result extends SchemaGe
     all: (params: Params) => Result[]
     exec: (params: Params) => void
     params: Params /* debug only */
+    result: Result /* debug only */
 }
 
 abstract class StatementBase<Params extends SchemaGeneric, Result extends SchemaGeneric> implements Statement<Params, Result> {
@@ -59,8 +60,7 @@ abstract class StatementBase<Params extends SchemaGeneric, Result extends Schema
     abstract all(params: Params): Result[]
     abstract exec(params: Params): void
     abstract params: Params /* debug only */
-    // all: (params: Params) => Result[]
-    // exec: (params: Params) => void
+    abstract result: Result /* debug only */
 }
 
 export { StatementBase }

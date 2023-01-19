@@ -5,7 +5,7 @@ import { StatementBase } from '../../statement.ts'
 
 
 class Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> extends StatementBase<Params, Result> {
-  public constructor(private stmt: sqlite_native.PreparedStatement<any>, public params: Params) {
+  public constructor(private stmt: sqlite_native.PreparedStatement<any>, public params: Params, public result: Result) {
     super()
   }
 
@@ -23,7 +23,7 @@ abstract class Model extends ModelBase {
 
   protected prepare<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, result: Result) {
     const stmt = this.driver.prepare(sql)
-    return new Statement<Params, Result>(stmt, params)
+    return new Statement<Params, Result>(stmt, params, result)
   }
 }
 

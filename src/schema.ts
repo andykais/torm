@@ -1,18 +1,14 @@
 import { z } from './dependencies.ts'
-import type { Nominal, NominalMapObject, NominalMapUnion, ZodInput, ValueOf } from './util.ts'
+import type { ZodInput, ValueOf } from './util.ts'
 import { ParamsField, ResultField, type Field } from './query.ts'
 
 export type SchemaInputGeneric = Record<string, z.ZodSchema<any, any, any>>
-// export type SchemaInputGeneric = {
-//     [field: string]: z.ZodSchema<any, any, any>
-// }
 export type SchemaField = {
   table_name: string
   field_name: string
   encode: z.ZodSchema<any, any, any>
   decode: z.ZodSchema<any, any, any>
 }
-// export type SchemaFieldGeneric = Nominal<SchemaField, 'params' | 'result'>
 export type SchemaFieldGeneric = ParamsField<SchemaField> | ResultField<SchemaField>
 
 export type SchemaGeneric = {
@@ -52,42 +48,25 @@ type BuiltSchemaParamsMap<T extends SchemaInputGeneric> = {
     decode: T[K]
   }
 }
-// export type BuiltSchemaParams<T extends SchemaInputGeneric> =
-//   BuiltSchemaParamsMap<T>
 
-// export type BuiltSchemaParams<T extends SchemaInputGeneric> =
-//   NominalMap<BuiltSchemaMap<T>, 'params'>
-//   & { ['*']: NominalMap<ValueOf<BuiltSchemaMap<T>>, 'params'> }
 
-// export type BuiltSchemaResult<T extends SchemaInputGeneric> =
-//   NominalMap<BuiltSchemaMap<T>, 'result'>
-//   & { ['*']: NominalMap<ValueOf<BuiltSchemaMap<T>>, 'result'> }
-
-// export type SchemaParams<T extends SchemaInputGeneric> = BuiltSchemaParams<T>
-// export type SchemaResult<T extends SchemaInputGeneric> = BuiltSchemaResult<T>
-
-// I dont know if I can make a reusable type here. I almost wish I had macros I could write
-// ...they would be more efficient I think and reusable
-// helper map unions
-export type MapUnionToParamsFieldInstance<T extends SchemaField> = T extends any ? ParamsField<T> : never
-export type MapUnionToResultFieldInstance<T extends SchemaField> = T extends any ? ResultField<T> : never
-// helper map objects
-export type MapObjectToParamsFieldInstance<T extends BuiltSchemaMap<any>> = { [K in keyof T]: ParamsField<T[K]> }
-export type MapObjectToResultFieldInstance<T extends BuiltSchemaMap<any>> = { [K in keyof T]: ResultField<T[K]> }
-// helper map all
 export type SchemaParams<T extends SchemaInputGeneric> =
-  MapObjectToParamsFieldInstance<BuiltSchemaMap<T>>
-  & { ['*']: MapUnionToParamsFieldInstance<ValueOf<BuiltSchemaMap<T>>> }
+  {
+    [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K], T[K]>>
+  } & {
+    ['*']: ValueOf<{
+      [K in Extract<keyof T, string>]: ParamsField<BuiltSchemaField<K, T[K], T[K]>>
+    }>
+  }
+
 export type SchemaResult<T extends SchemaInputGeneric> =
-  MapObjectToResultFieldInstance<BuiltSchemaMap<T>>
-  & { ['*']: MapUnionToResultFieldInstance<ValueOf<BuiltSchemaMap<T>>> }
-
-
-// export type BuiltNominalSchema<T extends SchemaInputGeneric, Identifier> = 
-//   NominalMapObject<BuiltSchemaMap<T>, Identifier>
-//   & { ['*']: NominalMapUnion<ValueOf<BuiltSchemaMap<T>>, Identifier> }
-// export type SchemaParams<T extends SchemaInputGeneric> = BuiltNominalSchema<T, 'params'>
-// export type SchemaResult<T extends SchemaInputGeneric> = BuiltNominalSchema<T, 'result'>
+  {
+    [K in Extract<keyof T, string>]: ResultField<BuiltSchemaField<K, T[K], T[K]>>
+  } & {
+    ['*']: ValueOf<{
+      [K in Extract<keyof T, string>]: ResultField<BuiltSchemaField<K, T[K], T[K]>>
+    }>
+  }
 
 
 export interface SchemaOutput<T extends SchemaInputGeneric> {
@@ -120,13 +99,6 @@ function schema<T extends SchemaInputGeneric>(table_name: string, schema: T): Sc
     params: built_params_schema as SchemaParams<T>,
     result: built_result_schema as SchemaResult<T>,
   }
-
-  // const full_schema = built_schema as BuiltSchema<T>
-  // ;(full_schema as any)['*'] = Object.values(built_schema)
-  // return {
-  //   params: (full_schema as any) as SchemaParams<T>,
-  //   result: (full_schema as any) as SchemaResult<T>,
-  // }
 }
 
 
