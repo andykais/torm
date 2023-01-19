@@ -60,7 +60,6 @@ class BookORM extends Torm {
 
 
 test('auto migration', async (ctx) => {
-  console.log(ctx.fixture_path('migrations.db'))
   let db_new = new BookORM(ctx.fixture_path('migrations.db'))
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())

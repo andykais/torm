@@ -17,13 +17,16 @@ class Book extends Model('book', {
         title TEXT NOT NULL
       )`)
   }
+  create = this.query`INSERT INTO book (title) VALUES (${Book.params.title})`.exec
+  // other potential designs...
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params('limit').number()}`.exec
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params.limit.number()}`.exec
-  create = this.query`INSERT INTO book (title) VALUES (${Book.params.title})`.exec
+
   list = this.query`SELECT ${Book.result['*']} FROM book ORDER BY id LIMIT ${Util.params.limit}`.all
 }
 
 class BookORM extends Torm {
+  static migrations = { version: '1.0.0' }
   book = this.model(Book)
 }
 

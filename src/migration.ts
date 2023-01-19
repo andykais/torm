@@ -31,6 +31,27 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
     return torm.schemas.table('__torm_metadata__') === undefined
   }
 
+  public static validate(torm: TormBase<Driver>, migrations: TormBase<Driver>['migrations']) {
+    const application_version = MigrationBase.application_version(torm)
+    if (application_version === undefined) throw new Error('Misconfigured migration: expected a configured application version, found undefined')
+    for (const migration of torm.migrations.initialization) {
+      if (migration.version !== application_version) {
+        throw new Error(`Misconfigured migration: ${migration.constructor.name} initialization migration version ${migration.version} does not match defined application version ${application_version}`)
+      }
+    }
+    if (torm.migrations.upgrades.length > 0) {
+      let at_least_one_current_migration = false
+      for (const migration of torm.migrations.upgrades) {
+        if (semver.eq(migration.version, application_version)) {
+          at_least_one_current_migration = true
+        } else if (semver.gt(migration.version, application_version)) {
+          throw new Error(`Misconfigured migration: ${migration.constructor.name} upgrade migration version ${migration.version} is greater than defined application version ${application_version}`)
+        }
+      }
+      if (at_least_one_current_migration === false) throw new Error(`Misconfigured migration: at least one upgrade migration matching the defined application version ${application_version} must exist`)
+    }
+  }
+
   public static initialize(torm: TormBase<Driver>) {
     const application_version = MigrationBase.application_version(torm)
     const schemas_class = torm.schemas.constructor as typeof ModelBase
