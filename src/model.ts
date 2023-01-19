@@ -7,6 +7,7 @@ import type { ColumnInput } from './query.ts'
 import type { MigrationClass } from './migration.ts'
 
 interface ModelClass {
+  migrations?: typeof ModelBase.migrations
   new (): ModelBase
 }
 interface ModelInstance {
@@ -18,7 +19,6 @@ abstract class ModelBase implements ModelInstance {
   private registered_stmts: Statement<any, any>[] = []
 
   static migrations?: {
-    version: string
     initialization?: MigrationClass
     upgrades?: MigrationClass[]
   }
