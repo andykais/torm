@@ -4,25 +4,27 @@ import type { Driver, Constructor } from './util.ts'
 import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, SchemaOutput } from './schema.ts'
 import { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { ColumnInput } from './query.ts'
+import type { MigrationClass } from './migration.ts'
 
 interface ModelClass {
   new (): ModelBase
 }
 interface ModelInstance {
   prepare_queries: (driver: Driver) => void
-  on_create: () => void
 }
 
 abstract class ModelBase implements ModelInstance {
   private _driver: Driver | null = null
   private registered_stmts: Statement<any, any>[] = []
 
-  public on_create() {}
+  static migrations?: {
+    version: string
+    initialization?: MigrationClass
+    upgrades?: MigrationClass[]
+  }
 
   public prepare_queries(driver: Driver) {
     this._driver = driver
-    // TODO detect _only_ do this if not exists
-    this.on_create()
     for (const stmt of this.registered_stmts) {
       stmt.prepare_query(driver)
     }
@@ -33,8 +35,19 @@ abstract class ModelBase implements ModelInstance {
     else throw new Error('A driver cannot be instantiated until init() is called')
   }
 
-  // TODO rename to 'prepare'?
   protected query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+    const stmt = this.build_stmt(strings, ...params)
+    this.registered_stmts.push(stmt)
+    return stmt
+  }
+
+  protected prepare<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+    const stmt = this.build_stmt(strings, ...params)
+    stmt.prepare_query(this.driver)
+    return stmt
+  }
+
+  protected build_stmt<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const params_fields: SchemaGeneric = {}
     const result_fields: SchemaGeneric = {}
 
@@ -49,9 +62,7 @@ abstract class ModelBase implements ModelInstance {
       sql_string += column_inputs + string_part
     }
 
-    const stmt = this.create_stmt(sql_string, params_fields as StatementParams<T>, result_fields as StatementResult<T>)
-    this.registered_stmts.push(stmt)
-    return stmt
+    return this.create_stmt(sql_string, params_fields as StatementParams<T>, result_fields as StatementResult<T>)
   }
 
   protected abstract create_stmt<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, results: Result): Statement<Params, Result>
