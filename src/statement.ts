@@ -1,5 +1,5 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
-import type { ZodInput, Merge } from './util.ts'
+import type { Merge } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
 import type { FieldInput } from './field.ts'
 

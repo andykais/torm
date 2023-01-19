@@ -15,13 +15,6 @@ class Author extends Model('author', {
   get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
 }
 
-const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-type Literal = z.infer<typeof literalSchema>;
-type Json = Literal | { [key: string]: Json } | Json[];
-const json: z.ZodType<Json> = z.lazy(() =>
-  z.union([literalSchema, z.array(json), z.record(json)])
-);
-
 class Book extends Model('book', {
   id:         field.number(),
   author_id:  field.number(),

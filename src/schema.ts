@@ -1,5 +1,5 @@
 import { z } from './dependencies.ts'
-import type { ZodInput, ValueOf } from './util.ts'
+import type { ValueOf } from './util.ts'
 import { ParamsField, ResultField, type Field } from './query.ts'
 import type { FieldDefinition } from './field.ts'
 
@@ -8,8 +8,6 @@ export type SchemaField = {
   table_name: string
   field_name: string
   data_transformers: FieldDefinition<any, any>
-  // encode?: z.ZodSchema<any, any, any>
-  // decode?: z.ZodSchema<any, any, any>
 }
 export type SchemaFieldGeneric = ParamsField<SchemaField> | ResultField<SchemaField>
 
@@ -20,14 +18,10 @@ export type SchemaGeneric = {
 export type BuiltSchemaField<
   Name extends string,
   DT extends FieldDefinition<any, any>
-  // Encode extends z.ZodSchema<any, any, any>,
-  // Decode extends z.ZodSchema<any, any, any>
   > = {
     table_name: string
     field_name: Name
     data_transformers: DT
-    // encode: Encode
-    // decode: Decode
 }
 
 type BuiltSchemaMap<T extends SchemaInputGeneric> = {
@@ -35,8 +29,6 @@ type BuiltSchemaMap<T extends SchemaInputGeneric> = {
         table_name: string
         field_name: K
         data_transformers: T[K]
-        // encode: T[K]
-        // decode: T[K]
     }
 }
 
@@ -51,8 +43,6 @@ type BuiltSchemaParamsMap<T extends SchemaInputGeneric> = {
     table_name: string
     field_name: K
     data_transformers: T[K]
-    // encode: T[K]
-    // decode: T[K]
   }
 }
 
