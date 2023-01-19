@@ -1,6 +1,7 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge } from './util.ts'
 import { ColumnInput, ParamsField, ResultField } from './query.ts'
+import type { Driver, Constructor } from './util.ts'
 import type { FieldInput } from './field.ts'
 
 type ExtractParamsInputs<T> =
@@ -38,9 +39,11 @@ export interface Statement<Params extends SchemaGeneric, Result extends SchemaGe
     exec: (params: Params) => void
     params: Params /* debug only */
     result: Result /* debug only */
+
+    prepare_query(driver: Driver): void
 }
 
-abstract class StatementBase<Params extends SchemaGeneric, Result extends SchemaGeneric> implements Statement<Params, Result> {
+abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Result extends SchemaGeneric> implements Statement<Params, Result> {
 
   private get_param_field(field_name: string) {
     const field = this.params[field_name]
@@ -51,6 +54,18 @@ abstract class StatementBase<Params extends SchemaGeneric, Result extends Schema
     const field = this.result[field_name]
     if (field) return field
     throw new Error(`Field ${field_name} does not exist in result list (${Object.keys(this.result)})`)
+  }
+
+  protected _stmt: DriverStatement | null = null
+  private _driver: Driver | null = null
+
+  protected get driver() {
+    if (this._driver) return this._driver
+    else throw new Error('A statement driver cannot be used until init() is called')
+  }
+  protected get stmt(): DriverStatement {
+    if (this._stmt) return this._stmt
+    else throw new Error('A statement cannot be used until init() is called')
   }
 
   protected encode_params = (params: Params) => {
@@ -79,8 +94,15 @@ abstract class StatementBase<Params extends SchemaGeneric, Result extends Schema
   abstract one(params: Params): Result
   abstract all(params: Params): Result[]
   abstract exec(params: Params): void
-  abstract params: Params /* debug only */
-  abstract result: Result /* debug only */
+  protected abstract prepare(sql: string): DriverStatement
+
+  public prepare_query(driver: Driver) {
+    this._driver = driver
+    this._stmt = this.prepare(this.sql)
+  }
+
+  public constructor(public sql: string, public params: Params, public result: Result) {}
+
 }
 
 export { StatementBase }
