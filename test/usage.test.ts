@@ -10,6 +10,7 @@ class Author extends Model('author', {
   last_name:  z.string(),
 }) {
   create = this.query`INSERT INTO author (first_name, last_name) VALUES (${[Author.params.first_name, Author.params.last_name]})`.exec
+  get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
 }
 
 class Book extends Model('book', {
