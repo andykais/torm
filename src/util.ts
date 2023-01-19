@@ -9,6 +9,10 @@ export type NominalMapUnion<T, Identifier> = T extends any ? Nominal<T, Identifi
 export type NominalMapObject<T, Identifier> = {
   [K in keyof T]: Nominal<T[K], Identifier>
 }
+export type ExtractFromNominal<T extends Nominal<any, any>> =
+  T extends Nominal<infer V, any>
+    ? V
+    : never
 
 type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
