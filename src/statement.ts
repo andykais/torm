@@ -84,10 +84,10 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
 
   protected encode_params = (params: Params) => {
     const encoded_params: {[field: string]: any} = {}
-    for (const [field_name, val] of Object.entries(params)) {
-      const field = this.get_param_field(field_name)
+    for (const field of Object.values(this.params)) {
+      const val = params[field.field_name]
       try {
-        encoded_params[field_name] = field.data_transformers.call_encode(val)
+        encoded_params[field.field_name] = field.data_transformers.call_encode(val)
       } catch (e) {
         if (e instanceof z.ZodError) {
           const message = e.format()._errors.join(',')
