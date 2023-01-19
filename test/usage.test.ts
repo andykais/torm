@@ -1,22 +1,23 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration } from '../src/drivers/sqlite.ts'
-import * as field from '../src/field.ts'
+import { Model, Torm, Migration, field } from '../src/drivers/sqlite.ts'
 
 class Author extends Model('author', {
   id:         field.number(),
   first_name: field.string().optional(),
   last_name:  field.string(),
+  birthday:   field.datetime().optional(),
 }) {
   static migrations = {
     initialization: Migration.create('1.0.0', `
       CREATE TABLE IF NOT EXISTS author (
         id INTEGER NOT NULL PRIMARY KEY,
         first_name TEXT,
-        last_name TEXT NOT NULL
+        last_name TEXT NOT NULL,
+        birthday TEXT
       )`)
   }
 
-  create = this.query`INSERT INTO author (first_name, last_name) VALUES (${[Author.params.first_name, Author.params.last_name]})`.exec
+  create = this.query`INSERT INTO author (first_name, last_name, birthday) VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`.exec
   get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
 }
 
@@ -66,7 +67,6 @@ test('usage', async () => {
   const hobbit_insert = db.book.create({ title: 'The Hobbit', author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
 
   const book_row = db.book.get({ id: hobbit_insert.last_insert_row_id })
-  // TODO language should be an optional type
   expect_type<{ id: number; title: string; language: string; author_id: number } | undefined>(book_row)
   assert_equals({
     id: hobbit_insert.last_insert_row_id,
@@ -87,4 +87,28 @@ test('usage', async () => {
   assert_equals('Tolkein', author_row!.last_name)
 
   db.close()
+
+  // TODO track closed state, throw error on access after close()
+  // try {
+  //   db.schemas.version()
+  // } catch (e) {
+  //   console.log('e?')
+  // }
+})
+
+class EmptyORM extends Torm {
+  static migrations = { version: '1.0.0' }
+}
+
+test('empty torm', async () => {
+  await Deno.remove('test/fixtures/empty.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
+  const db = new EmptyORM('test/fixtures/empty.db')
+  await db.init()
+  assert_equals(db.schemas.version(), '1.0.0')
+  db.close()
+
+  const db_reopen = new EmptyORM('test/fixtures/empty.db')
+  await db_reopen.init()
+  assert_equals(db_reopen.schemas.version(), '1.0.0')
+  db_reopen.close()
 })

@@ -55,8 +55,8 @@ class OptionalField<In, Out extends ColumnValue> extends FieldDefinitionBase<In 
     super()
   }
 
-  public encode = (val: In | null): Out | null => {
-    if (val === null) return null
+  public encode = (val: In | null | undefined): Out | null => {
+    if (val === null || val === undefined) return null
     else return this.field_definition.encode(val)
   }
 

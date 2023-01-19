@@ -186,3 +186,4 @@ export {
 
 type Database = sqlite_native.Database
 export type { Database as Driver }
+export { field }

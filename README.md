@@ -5,77 +5,117 @@ A typesafe database ORM that exposes the full power of handwritten sql statement
 
 ## Getting Started
 ```ts
-import { Torm, Model, field } from 'https://deno.land/x/torm/drivers/sqlite-native/mod.ts'
+import { Torm, Model, field } from 'https://deno.land/x/torm/drivers/sqlite.ts'
 
 
-class Person extends Model('person', {
-  id:         field.number(),
-  first_name: field.string(),
-  last_name:  field.string(),
+class Book extends Model('book', {
+  id:           field.number(),
+  title:        field.string(),
+  language:     field.string().default('english'),
+  published_at: field.datetime().optional(),
 }) {
-  create = this.query`INSERT INTO person (first_name, last_name) VALUES (${[Person.params.first_name, Person.params.last_name]})`.exec
-  get = this.query`SELECT ${Person.result['*']} FROM person WHERE id = ${Person.params.id}`.one
+  create = this.query`INSERT INTO book (title, language, published_at) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at]})`.exec
+  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
 }
 
 
-class PeopleORM extends Torm {
-  person = this.model(Person)
+class BookORM extends Torm {
+  static migrations = { version: '1.0.0' }
+  book = this.model(Book)
 }
 
-const db = new PeoplORM('books.db')
+const db = new BookORM('books.db')
 await db.init()
-const info = db.person.create({ first_name: 'JR', last_name: 'Tolkein' })
-const row = db.person.get({ id: info.last_insert_row_id })
-console.log(row.first_name, row.last_name)
+const info = db.book.create({ title: 'The Hobbit', published_at: new Date('September 21, 1937') })
+const row = db.book.get({ id: info.last_insert_row_id })
+
+console.log(row?.title, 'written in', row?.language, 'published on', row?.published_at)
+// "The Hobbit written in english published on 1937-09-21T04:00:00.000Z"
 ```
 
 
 ## Migrations
-Torm include a full migration system, which is declared like so:
+Torm includes a full migration system, which can be declared like so:
 ```ts
-import { Torm, Model, field } from 'https://deno.land/x/torm/drivers/deno/mod.ts'
+class Author extends Model('author', {
+  id:           field.number(),
+  name:         field.string(),
+}) {
+  create = this.query`INSERT INTO author (name) VALUES (${Author.params.name})`.exec
+}
+
+class Book extends Model('book', {
+  id:           field.number(),
+  title:        field.string(),
+  language:     field.string().default('english'),
+  published_at: field.datetime().optional(),
+  author_id:    field.number().optional(),
+}) {
+  create = this.query`INSERT INTO book (title, language, published_at, author_id) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at, Book.params.author_id]})`.exec
+  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
+  set_author = this.query`UPDATE book SET author_id = ${Book.params.author_id} WHERE title = ${Book.params.title}`.exec
+}
 
 const InitializationMigration = Migration.create('1.1.0', `
-  CREATE TABLE IF NOT EXISTS author (
+  CREATE TABLE author (
     id INTEGER NOT NULL PRIMARY KEY,
-    first_name TEXT,
-    last_name TEXT NOT NULL,
-    address TEXT
+    name TEXT NOT NULL
+  );
+
+  CREATE TABLE book (
+    id INTEGER NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    data TEXT,
+    language TEXT NOT NULL,
+    published_at TEXT,
+    author_id INTEGER,
+    FOREIGN KEY(author_id) REFERENCES author(id)
   )`)
 
-const AddAddressColumnMigration = Migration.create('1.1.0', 'ALTER TABLE person ADD COLUMN address TEXT')
+// later on, we may add a author table
+const AddAuthorIdColumnMigration = Migration.create('1.1.0', db => db.exec('ALTER TABLE book ADD COLUMN author_id TEXT REFERENCES author_id(id)'))
 
-class PeopleORM extends Torm {
+class BookORM extends Torm {
   static migrations = {
     version: '1.1.0',
-    // an initialization migration is ran on the first database init() call
+    // an initialization migration is ran on the first database init() call, the first time the database is created
     initialization: InitializationMigration,
-    // upgrades will be ran in order of their semver versions.
+    // upgrades are ran when the connected database has an outdated version number
+    // upgrades run in order of their semver versions.
     // The latest upgrade version _must_ match the version defined above
-    upgrades: [AddAddressColumnMigration],
+    upgrades: [AddAuthorIdColumnMigration],
   }
 
-  person = this.model(Person)
+  book = this.model(Book)
+  author = this.model(Author)
 }
+
+const db = new BookORM('books.db')
+await db.init()
+const info = db.author.create({ name: 'JR Tolkien' })
+db.book.set_author({ title: 'The Hobbit', author_id: info.last_insert_row_id })
 ```
 
-## Roadmap
-#### 1.0
-- [X] `SELECT ${Book.schema.id}` tagged template literal type translation
-- [X] `SELECT ${[Book.schema.id, Book.schema.title]}` array param support
-- [X] `SELECT ${Book.schema['*']}` helper
-- [X] `SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}` param & result type narrowing
-- [O] runtime implementation
-  - [O] driver bridges
-    - [X] `sqlite-native` (deno)
-    - [ ] `better-sqlite3` (nodejs)
-- [X] migrations framework
-  - [X] Torm metadata table
-  - [X] migration declarations
-#### 2.0
-- [ ] driver bridges
-  - [ ] Postgres
-  - [ ] MySQL
+## Builtin Schema Model
+A torm db instance comes with a built in model called `schemas`. It contains useful metadata about your database, and can even aid you in testing.
+```ts
+// As an example of how this can be used, this is a test where we can create a fresh database,
+// and migrate an older database then we can compare that the two databases have identical table structures.
+// This is a very useful sanity check when writing migrations
+test('migration structure', async () => {
+  const db_new = new BookORM('test/fixtures/migrations.db')
+  await db_new.init()
+  assert_equals('1.1.0', db_new.schemas.version())
+  const tables_new = db_new.schemas.tables()
+
+  const db_old = new BookORM('test/fixtures/migrations_1.0.0.db')
+  await db_old.init()
+  assert_equals('1.1.0', db_old.schemas.version())
+  const tables_old = db_old.schemas.tables()
+  assert_equals(tables_new, tables_old)
+})
+
+```
 
 ## Philosophy
 This library does not intend to be a set-it-and-forget-it ORM. Production ready applications need developers to understand exactly what queries are being ran against the database. Often this information is shrouded in traditional ORMs and developers end up treating the database like a black box. Torm instead forces developers to write their own queries, but keeps some of the advantages of traditional ORMs by keeping type-safety a first class citizen.
@@ -84,4 +124,4 @@ When a team gets to be larger than a single developer working on the backend, qu
 
 Besides the benefit of better visibility into queries, this means that Torm can prepare all your queries for free at the time of database connection. This avoids any of the difficulty that systems like Prisma, or Sequelize have around LRU caching of prepared queries (which at the very least are always slow on the first call).
 
-> The first gulp from the glass of **database development** will turn you to **ORMs**, but at the bottom of the glass **raw sql queries** are waiting for you
+> The first gulp from the glass of **backend development** will turn you to **ORMs**, but at the bottom of the glass **raw sql queries** are waiting for you

@@ -14,8 +14,17 @@ interface TableRow {
 }
 abstract class SchemasModel extends ModelBase {
   abstract unsafe_version_set(version: string): void
+  /**
+    * Returns the current migration version of the database
+    */
   abstract version(): string
+  /**
+    * Returns table information a particular table
+    */
   abstract table(table_name: string): TableRow | undefined
+  /**
+    * Returns a predictable array of information on the database schemas
+    */
   abstract tables(): TableRow[]
 }
 
