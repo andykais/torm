@@ -77,6 +77,9 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
       migration.prepare_queries()
       migration.call()
     }
+    if (semver.eq(next_version, application_version)) {
+      torm.migrations.finalize_migration()
+    }
     torm.schemas.unsafe_version_set(next_version)
   }
 }
