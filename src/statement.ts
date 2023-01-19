@@ -133,8 +133,7 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
   public prepare_query(driver: Driver) {
     this._driver = driver
     try {
-
-    this._stmt = this.prepare(this.sql)
+      this._stmt = this.prepare(this.sql)
     } catch (e) {
       throw new Error(`${e.message}
 ${'```'}

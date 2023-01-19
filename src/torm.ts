@@ -116,6 +116,8 @@ abstract class TormBase<D extends Driver> {
         this.schemas.unsafe_version_set(application_version)
         this.status = 'initialized'
       }
+    } else {
+      this.initialize_models()
     }
   }
 
