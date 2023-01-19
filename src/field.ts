@@ -9,8 +9,6 @@ export interface FieldDefinition<In, Out extends ColumnValue> {
 
   call_encode: (val: In) => Out
   call_decode: (val: Out) => In
-
-  is_optional: boolean
 }
 
 export type FieldInput<F extends FieldDefinition<any, any>> =
@@ -25,25 +23,23 @@ export type FieldOutput<F extends FieldDefinition<any, any>> =
 
 abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements FieldDefinition<In, Out> {
   optional() {
-    this.is_optional = true
     return new OptionalField<In, Out>(this)
   }
 
-  is_optional = false
+  default(val: In) {
+    return new DefaultField<In, Out>(this, val)
+  }
+
 
   public abstract encode: (val: In) => Out
   public abstract decode?: (val: Out) => In
 
   public call_encode(val: In): Out {
-    const val_is_empty = val === undefined || val === null
-    if (val_is_empty && this.is_optional) return null as Out
-    else return this.encode(val)
+    return this.encode(val)
   }
 
   public call_decode(val: Out): In {
-    const val_is_empty = val === undefined || val === null
-    if (val_is_empty && this.is_optional) return null as In
-    else if (this.decode) return this.decode(val)
+    if (this.decode) return this.decode(val)
     // we have to cast here because this is technically incorrect. We have checks elsewhere though that would prevent us from writing a field with a missing decoder which has a different output type than input
     else return (val as any) as In
   }
@@ -52,7 +48,6 @@ abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements Field
 class OptionalField<In, Out extends ColumnValue> extends FieldDefinitionBase<In | null, Out | null> {
   public constructor(private field_definition: FieldDefinition<In, Out>) {
     super()
-    this.is_optional = true
   }
 
   public encode = (val: In | null): Out | null => {
@@ -62,6 +57,23 @@ class OptionalField<In, Out extends ColumnValue> extends FieldDefinitionBase<In 
 
   public decode = (val: Out | null): In | null => {
     if (val === null) return null
+    else if (this.field_definition.decode) return this.field_definition.decode(val)
+    else return val as In
+  }
+}
+
+class DefaultField<In, Out extends ColumnValue> extends FieldDefinitionBase<In | null | undefined, Out> {
+  public constructor(private field_definition: FieldDefinition<In, Out>, private default_value: In) {
+    super()
+  }
+
+  public encode = (val: In | null | undefined): Out => {
+    if (val === null || val === undefined) return this.encode(this.default_value)
+    else return this.field_definition.encode(val)
+  }
+
+  public decode = (val: Out | null): In => {
+    if (val === null) return this.default_value
     else if (this.field_definition.decode) return this.field_definition.decode(val)
     else return val as In
   }

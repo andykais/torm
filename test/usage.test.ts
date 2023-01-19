@@ -25,6 +25,7 @@ class Book extends Model('book', {
   author_id:  field.number(),
   title:      field.string(),
   data:       field.json(),
+  language:   field.string().default('english'),
 }) {
   static migrations = {
     initialization: Migration.create('1.0.0', `
@@ -33,11 +34,12 @@ class Book extends Model('book', {
         author_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         data TEXT,
+        language TEXT NOT NULL,
         FOREIGN KEY(author_id) REFERENCES author(id)
       )`)
   }
 
-  create = this.query`INSERT INTO book (title, author_id, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.data]})`.exec
+  create = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec
   get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
 
   list_with_author = this.query`
@@ -61,12 +63,18 @@ test('usage', async () => {
   await db.init()
 
   const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })
-  const hobbit_insert = db.book.create({ title: 'The Hobbit', author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
+  const hobbit_insert = db.book.create({ title: 'The Hobbit', language: undefined, author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
 
   const book_row = db.book.get({ id: hobbit_insert.last_insert_row_id })
-  expect_type<{ id: number; title: string; author_id: number } | undefined>(book_row)
-  assert_equals(book_row!.title, 'The Hobbit')
-  assert_equals(book_row!.data, {some: 'data'})
+  // TODO language should be an optional type
+  expect_type<{ id: number; title: string; language: string | null | undefined; author_id: number } | undefined>(book_row)
+  assert_equals({
+    id: hobbit_insert.last_insert_row_id,
+    author_id: tolkien_insert.last_insert_row_id,
+    title: 'The Hobbit',
+    data: { some: 'data' },
+    language: 'english',
+  }, book_row)
 
   const books_and_authors = db.book.list_with_author({})
   assert_equals(books_and_authors.length, 1)
