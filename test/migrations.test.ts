@@ -8,15 +8,6 @@ class Author extends Model('author', {
   first_name: field.string().optional(),
   last_name:  field.string(),
 }) {
-  static migrations = {
-    initialization: Migration.create('1.1.0', `
-      CREATE TABLE IF NOT EXISTS author (
-        id INTEGER NOT NULL PRIMARY KEY,
-        first_name TEXT,
-        last_name TEXT NOT NULL
-      )`)
-  }
-
   create = this.query`INSERT INTO author (first_name, last_name) VALUES (${[Author.params.first_name, Author.params.last_name]})`.exec
   get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
 }
@@ -28,8 +19,18 @@ class Book extends Model('book', {
   data:         field.json().optional(),
   published_at: field.datetime().optional(),
 }) {
+  create = this.query`INSERT INTO book (title, author_id, data, published_at) VALUES (${[Book.params.title, Book.params.author_id, Book.params.data, Book.params.published_at]})`.exec
   get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
   find = this.query`SELECT ${Book.result['*']} FROM book`.all
+  get_with_author = this.query`SELECT ${[
+    Book.result.title,
+    Book.result.published_at,
+    Book.result.data,
+    Author.result.last_name,
+    Author.result.first_name,
+  ]} FROM book
+    INNER JOIN author ON author.id = author_id
+    WHERE title = ${Book.params.title}`.one
 }
 class BookORM extends Torm {
   static migrations = {
@@ -108,6 +109,23 @@ test('manual migration', async () => {
     data: { some: "data" },
     published_at: null
   }], db_old.book.find({}))
+
+  db_old.book.create({
+    title: 'Going Postal',
+    author_id: db_old.author.create({
+      first_name: 'Terry',
+      last_name: 'Pratchett'
+    }).last_insert_row_id,
+    data: { description: 'A first class adventure starring Moist Von Lipwig, Adora Belle Dearheart and The Ankh-Morpork Post Office in a race against the Clacks!' },
+    published_at: new Date('9/25/2004')
+  })
+  assert_equals({
+    title: "Going Postal",
+    data: { description: 'A first class adventure starring Moist Von Lipwig, Adora Belle Dearheart and The Ankh-Morpork Post Office in a race against the Clacks!' },
+    published_at: new Date('9/25/2004'),
+    first_name: 'Terry',
+    last_name: 'Pratchett',
+  }, db_old.book.get_with_author({ title: 'Going Postal' }))
 
   const tables_old = db_old.schemas.tables()
   assert_equals(db_new.schemas.version(), db_old.schemas.version())

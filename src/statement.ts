@@ -39,10 +39,16 @@ interface RawRowData {
   [field_name: string]: ColumnValue
 }
 
+interface ExecInfo {
+  // TODO this is sqlite specific
+  last_insert_row_id: number
+  changes: number
+}
+
 export interface Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> {
-    one: (params: Params) => Result
+    one: (params: Params) => Result | undefined
     all: (params: Params) => Result[]
-    exec: (params: Params) => void
+    exec: (params: Params) => ExecInfo
     params: Params /* debug only */
     result: Result /* debug only */
 
@@ -117,14 +123,20 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
     return decoded_result as Result
   }
 
-  abstract one(params: Params): Result
+  abstract one(params: Params): Result | undefined
   abstract all(params: Params): Result[]
-  abstract exec(params: Params): void
+  abstract exec(params: Params): ExecInfo
   protected abstract prepare(sql: string): DriverStatement
 
   public prepare_query(driver: Driver) {
     this._driver = driver
+    try {
+
     this._stmt = this.prepare(this.sql)
+    } catch (e) {
+      console.log({ sql: this.sql })
+      throw e
+    }
   }
 
   public constructor(public sql: string, public params: Params, public result: Result) {}
