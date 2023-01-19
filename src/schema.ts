@@ -1,18 +1,17 @@
-import * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
+import { z } from './util.ts'
+import type { Nominal, NominalMapObject, NominalMapUnion, ZodInput, ValueOf } from './util.ts'
 
 export type SchemaGeneric = {
     [field: string]: z.ZodSchema<any, any, any>
 }
-export type BuildSchemaFieldGeneric = {
+export type SchemaFieldGeneric = Nominal<{
     table_name: string
     field_name: string
     encode: z.ZodSchema<any, any, any>
     decode: z.ZodSchema<any, any, any>
-}
-export type BuildSchemaGeneric = {
-    [field: string]: BuildSchemaFieldGeneric
-}
-export type BuildSchemaField<
+}, 'params' | 'result'>
+
+export type BuiltSchemaField<
   Name extends string,
   Encode extends z.ZodSchema<any, any, any>,
   Decode extends z.ZodSchema<any, any, any>> = {
@@ -22,11 +21,7 @@ export type BuildSchemaField<
     decode: Decode
 }
 
-export type BuildSchema<T extends SchemaGeneric> = 
-  BuildSchemaMap<T>
-  & { ['*']: ValueOf<BuildSchemaMap<T>> }
-
-type BuildSchemaMap<T extends SchemaGeneric> = {
+type BuiltSchemaMap<T extends SchemaGeneric> = {
     [K in keyof T]: {
         table_name: string
         field_name: K
@@ -34,24 +29,53 @@ type BuildSchemaMap<T extends SchemaGeneric> = {
         decode: T[K]
     }
 }
-type ValueOf<T> = T[keyof T]
 
-function schema<T extends SchemaGeneric>(table_name: string, schema: T) {
-    const built_schema: Partial<BuildSchemaMap<T>> = {}
-    Object.keys(schema).forEach((field: keyof T) => {
-        built_schema[field] = {
-            table_name,
-            field_name: field,
-            encode: schema[field],
-            decode: schema[field],
-        }
-    })
-    return built_schema as BuildSchema<T>
+
+export type BuiltSchema<T extends SchemaGeneric> = 
+  BuiltSchemaMap<T>
+  & { ['*']: ValueOf<BuiltSchemaMap<T>> }
+
+
+// export type BuiltSchemaParams<T extends SchemaGeneric> =
+//   NominalMap<BuiltSchemaMap<T>, 'params'>
+//   & { ['*']: NominalMap<ValueOf<BuiltSchemaMap<T>>, 'params'> }
+
+// export type BuiltSchemaResult<T extends SchemaGeneric> =
+//   NominalMap<BuiltSchemaMap<T>, 'result'>
+//   & { ['*']: NominalMap<ValueOf<BuiltSchemaMap<T>>, 'result'> }
+
+// export type SchemaParams<T extends SchemaGeneric> = BuiltSchemaParams<T>
+// export type SchemaResult<T extends SchemaGeneric> = BuiltSchemaResult<T>
+
+export type BuiltNominalSchema<T extends SchemaGeneric, Identifier> = 
+  NominalMapObject<BuiltSchemaMap<T>, Identifier>
+  & { ['*']: NominalMapUnion<ValueOf<BuiltSchemaMap<T>>, Identifier> }
+export type SchemaParams<T extends SchemaGeneric> = BuiltNominalSchema<T, 'params'>
+export type SchemaResult<T extends SchemaGeneric> = BuiltNominalSchema<T, 'result'>
+
+
+interface SchemaOutput<T extends SchemaGeneric> {
+  params: SchemaParams<T>
+  result: SchemaResult<T>
 }
 
-export type ZodInput<T extends z.ZodSchema<any, any, any>> = T extends z.ZodSchema<infer In, any, any>
-    ? In
-    : never
+function schema<T extends SchemaGeneric>(table_name: string, schema: T): SchemaOutput<T> {
+  const built_schema: Partial<BuiltSchemaMap<T>> = {}
+  // TODO add '*'
+  Object.keys(schema).forEach((field: keyof T) => {
+      built_schema[field] = {
+          table_name,
+          field_name: field,
+          encode: schema[field],
+          decode: schema[field],
+      }
+  })
+  const full_schema = built_schema as BuiltSchema<T>
+  return {
+    params: (full_schema as any) as SchemaParams<T>,
+    result: (full_schema as any) as SchemaResult<T>,
+  }
+}
 
 
 export { schema }
