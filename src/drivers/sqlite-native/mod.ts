@@ -2,12 +2,10 @@ import { sqlite_native } from '../../dependencies.ts'
 import type { BuiltSchemaField, SchemaGeneric } from '../../schema.ts'
 import { ModelBase, WithStaticSchema } from '../../model.ts'
 import { StatementBase } from '../../statement.ts'
-import { TormBase, type SchemasModel } from '../../torm.ts'
-// import { Database } from '../../../../sqlite-native/src/database.ts'
+import { TormBase, type SchemasModel, type InitOptions } from '../../torm.ts'
 import { SQLiteNativeDriver as Database } from '../../dependencies.ts'
 import { MigrationBase, type MigrationClass } from '../../migration.ts'
 import { field } from '../../mod.ts'
-// import type { Constructor } from '../../util.ts'
 
 type PreparedStatement = sqlite_native.PreparedStatement<any>
 
@@ -61,8 +59,9 @@ class SqliteMasterModel extends Model('sqlite_master', {
 }) {}
 class InitializeTormMetadata extends Migration {
   version = '0.1.0'
-  call() {
-    this.driver.exec(`
+  call(driver?: Database) {
+    if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
+    driver.exec(`
       CREATE TABLE IF NOT EXISTS __torm_metadata__ (
         singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can exist
         torm_version TEXT NOT NULL,
@@ -70,7 +69,7 @@ class InitializeTormMetadata extends Migration {
         updated_at DATETIME NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
         created_at DATETIME NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
       )`)
-    this.driver.prepare(`INSERT INTO __torm_metadata__ (torm_version) VALUES (:torm_version)`).exec({
+    driver.prepare(`INSERT INTO __torm_metadata__ (torm_version) VALUES (:torm_version)`).exec({
       torm_version: this.version
     })
   }
@@ -166,17 +165,17 @@ class Torm extends TormBase<sqlite_native.Database> {
     super()
   }
 
-  public async init() {
+  public async init(options?: InitOptions) {
     const driver = new Database(this.db_path, this.options)
     await driver.connect()
-    super.init(driver)
+    this._init(driver, options)
     this.schemas.version()
   }
 
   public close() { this.driver.close() }
 
   protected schemas_class = SchemasModelImpl
-  public schemas = new SchemasModelImpl()
+  public schemas: SchemasModel = new SchemasModelImpl(this)
 }
 
 export {
