@@ -32,7 +32,10 @@ Deno.test('usage', async () => {
   await driver.connect()
 
   const book = new Book()
-  // const id: number = book.get.params.id
+  // book.get.params
+  const id: number = book.get.params.id
+
+  const row = book.get.one({ id: 1 })
   // const isbn: string = book.get.params.isbn
   // const db = torm(driver, { FooBar })
 
