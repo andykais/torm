@@ -36,6 +36,8 @@ class Tag extends Model('tag', {
   search_tag_and_group = this.query`SELECT ${Tag.result.name}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN tag_group ON tag_group_id = tag_group.id
     WHERE tag.name LIKE ${Tag.params.name} || '%'`.all
+
+  expose_prepare = this.prepare
 }
 
 class TagORM extends Torm {
@@ -51,11 +53,16 @@ test('field alias names', async (ctx) => {
   await db.init()
 
   const artist_tag_group_id = db.tag_group.create({ name: 'artist' }).last_insert_row_id
-  db.tag.create({ name: 'picasso', tag_group_id: artist_tag_group_id })
+  const picasso_tag_id = db.tag.create({ name: 'picasso', tag_group_id: artist_tag_group_id }).last_insert_row_id
 
   const result = db.tag.search_tag_and_group({ name: 'pica' })
   expect_type<{ name: string; group: string }>(result[0])
   assert_equals(result, [{ name: 'picasso', group: 'artist' }])
+
+  const stmt = db.tag.expose_prepare`SELECT ${Tag.result['*']} FROM tag WHERE name = '${'picasso'}'`
+  const hardcoded_query = stmt.one()
+  expect_type<{ id: number; name: string; tag_group_id: number } | undefined>(hardcoded_query)
+  assert_equals(hardcoded_query, { id: picasso_tag_id, name: 'picasso', tag_group_id: artist_tag_group_id })
 
   db.close()
 })

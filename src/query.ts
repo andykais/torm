@@ -7,6 +7,15 @@ export type ColumnInput =
   | SchemaFieldGeneric[]
 
 
+export type RawSqlInterpolationValues =
+  | string
+  | number
+
+export type SqlTemplateArg =
+  | ColumnInput
+  | RawSqlInterpolationValues
+
+
 type AliasResultField<T extends SchemaField, Alias extends string> = ResultField<{
  table_name: T['table_name']
  field_name: Alias

@@ -3,7 +3,7 @@ import { schema } from './schema.ts'
 import type { Driver, Constructor } from './util.ts'
 import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric } from './schema.ts'
 import { Statement, StatementParams, StatementResult } from './statement.ts'
-import type { ColumnInput } from './query.ts'
+import type { SqlTemplateArg, RawSqlInterpolationValues } from './query.ts'
 import type { MigrationClass } from './migration.ts'
 import type { TormBase } from './torm.ts'
 
@@ -42,19 +42,19 @@ abstract class ModelBase implements ModelInstance {
     return this.torm.driver
   }
 
-  protected query<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+  protected query<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const stmt = this.build_stmt(strings, ...params)
     this.registered_stmts.push(stmt)
     return stmt
   }
 
-  protected prepare<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+  protected prepare<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const stmt = this.build_stmt(strings, ...params)
     stmt.prepare_query(this.driver)
     return stmt
   }
 
-  protected build_stmt<T extends ColumnInput[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+  protected build_stmt<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const params_fields: SchemaGeneric = {}
     const result_fields: SchemaGeneric = {}
 
@@ -74,7 +74,7 @@ abstract class ModelBase implements ModelInstance {
 
   protected abstract create_stmt<Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, results: Result): Statement<Params, Result>
 
-  private extract_columns(column_input: ColumnInput, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
+  private extract_columns(column_input: SqlTemplateArg, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
     if (Array.isArray(column_input)) {
       const built_columns_sql: string[] = []
       for (const column of column_input) {
@@ -98,7 +98,7 @@ abstract class ModelBase implements ModelInstance {
       return `${schema_field.table_name}.${schema_field.field_name}`
     }
   }
-  protected build_column_sql(schema_field: BuiltSchemaField<string, any>, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
+  protected build_column_sql(schema_field: BuiltSchemaField<string, any> | RawSqlInterpolationValues, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
     if (schema_field instanceof ParamsField) {
       params_fields[schema_field.field_name] = schema_field
       return this.build_param_sql(schema_field)
@@ -106,7 +106,14 @@ abstract class ModelBase implements ModelInstance {
       result_fields[schema_field.field_name] = schema_field
       return this.build_result_sql(schema_field)
     } else {
-      throw new Error(`Unexpected schema_field ${schema_field}`)
+      switch (typeof schema_field) {
+        case 'string':
+          return schema_field
+        case 'number':
+          return `${schema_field}`
+        default:
+          throw new Error(`Unexpected schema_field ${schema_field}`)
+      }
     }
   }
 

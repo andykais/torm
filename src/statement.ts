@@ -1,6 +1,6 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge, OptionalKeys } from './util.ts'
-import { ColumnInput, ParamsField, ResultField } from './query.ts'
+import { SqlTemplateArg, ParamsField, ResultField } from './query.ts'
 import type { Driver, OptionalOnEmpty } from './util.ts'
 import type { FieldInput, FieldOutput } from './field.ts'
 import { z } from './deps.ts'
@@ -15,7 +15,7 @@ type ExtractResultInputs<T> =
     ? { [K in Name]: FieldOutput<T['data_transformers']> } // params and results should both spit out In rather than Out
     : never
 
-export type StatementParams<T extends ColumnInput[]> =
+export type StatementParams<T extends SqlTemplateArg[]> =
     OptionalKeys<
       Merge<
         T extends Array<infer G>
@@ -26,7 +26,7 @@ export type StatementParams<T extends ColumnInput[]> =
       >
     >
 
-export type StatementResult<T extends ColumnInput[]> =
+export type StatementResult<T extends SqlTemplateArg[]> =
     Merge<
       T extends Array<infer G>
         ? G extends Array<infer B>
