@@ -101,7 +101,7 @@ abstract class TormBase<D extends Driver> {
     this.schemas.prepare_queries(driver)
 
     if (application_version !== undefined) {
-      MigrationBase.validate(this, this._migrations)
+      MigrationBase.validate(this)
       if (MigrationBase.is_new(this)) MigrationBase.initialize(this)
 
       if (auto_migrate) {

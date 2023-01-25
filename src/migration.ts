@@ -31,7 +31,7 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
     return torm.schemas.table('__torm_metadata__') === undefined
   }
 
-  public static validate(torm: TormBase<Driver>, migrations: TormBase<Driver>['migrations']) {
+  public static validate(torm: TormBase<Driver>) {
     const application_version = MigrationBase.application_version(torm)
     if (application_version === undefined) throw new Error('Misconfigured migration: expected a configured application version, found undefined')
     for (const migration of torm.migrations.initialization) {

@@ -1,5 +1,5 @@
 import { test, assert_equals } from './util.ts'
-import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { Torm } from '../drivers/sqlite.ts'
 
 
 class EmptyORM extends Torm {
