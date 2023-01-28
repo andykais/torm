@@ -1,6 +1,6 @@
 import * as sqlite_native from 'https://deno.land/x/sqlite_native@v1.0.4/mod.ts'
 import type { OptionalOnEmpty } from '../src/util.ts'
-import type { SchemaGeneric } from '../src/schema.ts'
+import { Vars, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'
 import { StatementBase } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
@@ -187,3 +187,4 @@ export {
 type Database = sqlite_native.Database
 export type { Database as Driver }
 export { field }
+export { Vars }

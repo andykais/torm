@@ -1,5 +1,5 @@
 import { ParamsField, ResultField } from './query.ts'
-import { schema } from './schema.ts'
+import { schema, type SchemaOutput } from './schema.ts'
 import type { Driver, Constructor } from './util.ts'
 import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric } from './schema.ts'
 import { Statement, StatementParams, StatementResult } from './statement.ts'
@@ -92,10 +92,11 @@ abstract class ModelBase implements ModelInstance {
     return `:${schema_field.field_name}`
   }
   protected build_result_sql(schema_field: ResultField<any>) {
+    const table_name = schema_field.table_name ? `${schema_field.table_name}.` : ''
     if (schema_field.alias_of) {
-      return `${schema_field.table_name}.${schema_field.alias_of} AS '${schema_field.field_name}'`
+      return `${table_name}${schema_field.alias_of} AS '${schema_field.field_name}'`
     } else {
-      return `${schema_field.table_name}.${schema_field.field_name}`
+      return `${table_name}${schema_field.field_name}`
     }
   }
   protected build_column_sql(schema_field: BuiltSchemaField<string, any> | RawSqlInterpolationValues, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {

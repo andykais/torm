@@ -72,7 +72,9 @@
     "https://deno.land/x/zod@v3.18.0/types.ts": "f15cf4d03176c0987a6b5d3589ccee35e73b7947f33f5ab93f1be27b3a51517e"
   },
   "npm": {
-    "specifiers": { "ts-expect": "ts-expect@1.3.0" },
+    "specifiers": {
+      "ts-expect": "ts-expect@1.3.0"
+    },
     "packages": {
       "ts-expect@1.3.0": {
         "integrity": "sha512-e4g0EJtAjk64xgnFPD6kTBUtpnMVzDrMb12N1YZV0VvSlhnVT3SGxiYTLdGy8Q5cYHOIC/FAHmZ10eGrAguicQ==",

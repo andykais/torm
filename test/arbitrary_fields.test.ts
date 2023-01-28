@@ -1,10 +1,12 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { Model, Vars, Torm, Migration, field } from '../drivers/sqlite.ts'
 
 
-class Util extends Model('builtin', {
-  limit: field.number()
-}) {}
+const vars = Vars({
+  limit: field.number(),
+  total: field.number(),
+})
+
 
 class Book extends Model('book', {
   id:    field.number(),
@@ -22,7 +24,8 @@ class Book extends Model('book', {
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params('limit').number()}`.exec
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params.limit.number()}`.exec
 
-  list = this.query`SELECT ${Book.result['*']} FROM book ORDER BY id LIMIT ${Util.params.limit}`.all
+  list = this.query`SELECT ${Book.result['*']} FROM book ORDER BY id LIMIT ${vars.params.limit}`.all
+  count = this.query`SELECT COUNT(*) as ${vars.result.total} FROM book`.one
 }
 
 class BookORM extends Torm {
@@ -44,6 +47,10 @@ test('fields without models', async (ctx) => {
     { id: 1, title: 'The Hobbit' },
     { id: 2, title: 'The Giver' },
   ])
+
+  const count = db.book.count()!
+  expect_type<{ total: number }>(count)
+  assert_equals(count, { total: 3 })
 
   db.close()
 })
