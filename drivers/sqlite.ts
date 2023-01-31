@@ -1,4 +1,4 @@
-import * as sqlite_native from 'https://deno.land/x/sqlite_native@v1.0.4/mod.ts'
+import * as sqlite_native from 'https://deno.land/x/sqlite_native@v1.0.5/mod.ts'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'
