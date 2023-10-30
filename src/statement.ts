@@ -37,7 +37,7 @@ export type StatementResult<T extends SqlTemplateArg[]> =
 
 
 type ColumnValue = string | number | bigint | Uint8Array | null;
-interface RawRowData {
+export interface RawRowData {
   [field_name: string]: ColumnValue
 }
 

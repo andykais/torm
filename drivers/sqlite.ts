@@ -1,8 +1,8 @@
-import * as sqlite_native from 'https://deno.land/x/sqlite_native@1.0.5/mod.ts'
+import * as sqlite3 from 'https://deno.land/x/sqlite3@0.9.1/mod.ts'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'
-import { StatementBase } from '../src/statement.ts'
+import { StatementBase, type RawRowData } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
 import { MigrationBase, type MigrationClass } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
@@ -11,10 +11,10 @@ import { field } from '../src/mod.ts'
 class Statement<
     Params extends SchemaGeneric,
     Result extends SchemaGeneric
-  > extends StatementBase<sqlite_native.PreparedStatement, Params, Result> {
+  > extends StatementBase<sqlite3.Statement, Params, Result> {
 
   public one = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
-    const row = this.stmt.one(this.encode_params(params))
+    const row = this.stmt.get<RawRowData>(this.encode_params(params))
     if (row) return this.decode_result(row)
     // throw new Error('undefined one() is unimplemented')
   }
@@ -22,7 +22,13 @@ class Statement<
   public all = (...[params]: OptionalOnEmpty<Params>) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
 
 
-  public exec = (...[params]: OptionalOnEmpty<Params>) => this.stmt.exec(this.encode_params(params))
+  public exec = (...[params]: OptionalOnEmpty<Params>) => {
+    const changes = this.stmt.run(this.encode_params(params))
+    return {
+      changes,
+      last_insert_row_id: this.driver.lastInsertRowId
+    }
+  }
 
   protected prepare = (sql: string) => this.driver.prepare(sql)
 
@@ -41,11 +47,11 @@ const Model = WithStaticSchema(TempModelNonAbstract)
 abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
 
-  static create(version: string, arg: string | ((driver: sqlite_native.Database) => void)): MigrationClass {
+  static create(version: string, arg: string | ((driver: sqlite3.Database) => void)): MigrationClass {
     return class InlineMigration extends Migration {
       version = version
       call = () => {
-        if (typeof arg === 'string') this.driver.exec(arg)
+        if (typeof arg === 'string') this.driver.run(arg)
         else arg(this.driver)
       }
     }
@@ -58,9 +64,9 @@ class SqliteMasterModel extends Model('sqlite_master', {
 }) {}
 class InitializeTormMetadata extends Migration {
   version = '0.1.0'
-  call(driver?: sqlite_native.Database) {
+  call(driver?: sqlite3.Database) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
-    driver.exec(`
+    driver.run(`
       CREATE TABLE IF NOT EXISTS __torm_metadata__ (
         singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can exist
         torm_version TEXT NOT NULL,
@@ -68,7 +74,7 @@ class InitializeTormMetadata extends Migration {
         updated_at DATETIME NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
         created_at DATETIME NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
       )`)
-    driver.prepare(`INSERT INTO __torm_metadata__ (torm_version) VALUES (:torm_version)`).exec({
+    driver.prepare(`INSERT INTO __torm_metadata__ (torm_version) VALUES (:torm_version)`).run({
       torm_version: this.version
     })
   }
@@ -159,14 +165,14 @@ ${columns.join('\n  ')}
   }
 }
 
-class Torm extends TormBase<sqlite_native.Database> {
-  public constructor(private db_path: string, private options: sqlite_native.DatabaseOptions = {}) {
+class Torm extends TormBase<sqlite3.Database> {
+  public constructor(private db_path: string, private options: sqlite3.DatabaseOpenOptions = {}) {
     super()
   }
 
   public async init(options?: InitOptions) {
-    const driver = new sqlite_native.Database(this.db_path, this.options)
-    await driver.connect()
+    const driver = new sqlite3.Database(this.db_path, this.options)
+    // await driver.connect()
     this._init(driver, options)
     this.schemas.version()
   }
@@ -184,7 +190,7 @@ export {
   Migration,
 }
 
-type Database = sqlite_native.Database
+type Database = sqlite3.Database
 export type { Database as Driver }
 export { field }
 export { Vars }

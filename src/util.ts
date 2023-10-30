@@ -1,4 +1,4 @@
-import type { Driver as SQLiteNativeDriver } from '../drivers/sqlite.ts'
+import type { Driver as SQLite3Driver } from '../drivers/sqlite.ts'
 
 type AllKeys<T> = T extends any ? keyof T : never;
 type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
@@ -15,7 +15,8 @@ export type ValueOf<T> = T[keyof T]
 export type Constructor<T = {}> = new (...args: any[]) => T;
 
 export type Driver =
-  | SQLiteNativeDriver
+  // | SQLiteNativeDriver
+  | SQLite3Driver
 
 
 type TNullProperties<T> = {

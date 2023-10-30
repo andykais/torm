@@ -27,7 +27,7 @@ class Tag extends Model('tag', {
         id INTEGER NOT NULL PRIMARY KEY,
         name TEXT NOT NULL,
         tag_group_id INTEGER NOT NULL,
-        FOREIGN KEY(tag_group_id) REFERENCES tag(tag_group_id)
+        FOREIGN KEY(tag_group_id) REFERENCES tag_group(id)
       )`)
   }
 
