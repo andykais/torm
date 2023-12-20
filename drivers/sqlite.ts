@@ -170,6 +170,7 @@ class Torm extends TormBase<sqlite3.Database> {
     super()
   }
 
+  // deno-lint-ignore require-await
   public async init(options?: InitOptions) {
     const driver = new sqlite3.Database(this.db_path, this.options)
     // await driver.connect()

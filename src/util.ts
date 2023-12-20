@@ -5,7 +5,6 @@ type PickType<T, K extends AllKeys<T>> = T extends { [k in K]?: any }
     ? T[K]
     : never;
 
-// deno-lint-ignore ban-types
 export type Merge<T extends object> = {
   [k in AllKeys<T>]: PickType<T, k>;
 }
