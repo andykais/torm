@@ -7,5 +7,5 @@
     "rules": {
       "exclude": ["no-explicit-any"]
     }
-  }
+  },
 }

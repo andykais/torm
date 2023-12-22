@@ -46,16 +46,6 @@ const Model = WithStaticSchema(TempModelNonAbstract)
 
 abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
-
-  static create(version: string, arg: string | ((driver: sqlite3.Database) => void)): MigrationClass {
-    return class InlineMigration extends Migration {
-      version = version
-      call = () => {
-        if (typeof arg === 'string') this.driver.run(arg)
-        else arg(this.driver)
-      }
-    }
-  }
 }
 
 class SqliteMasterModel extends Model('sqlite_master', {
@@ -63,7 +53,7 @@ class SqliteMasterModel extends Model('sqlite_master', {
   sql: field.string(),
 }) {}
 class InitializeTormMetadata extends Migration {
-  version = '0.1.0'
+  static version = '0.1.0'
   call(driver?: sqlite3.Database) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
     driver.run(`
@@ -195,3 +185,4 @@ type Database = sqlite3.Database
 export type { Database as Driver }
 export { field }
 export { Vars }
+export { MigrationError, MigrationValidationError } from '../src/migration.ts'

@@ -1,102 +1,113 @@
-import { test, assert_equals, assert_rejects } from './util.ts'
-import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { test, assert_equals, assert_rejects, assert_throws } from './util.ts'
+import { Model, Torm, Migration, MigrationValidationError, field } from '../drivers/sqlite.ts'
 
 
-const InitBookMigration = Migration.create('1.0.0', `
-  CREATE TABLE book (
-    id INTEGER NOT NULL PRIMARY KEY,
-    title TEXT NOT NULL
-  )`)
 class Book extends Model('book', {
   id:    field.number(),
   title: field.string(),
 }) {
+  list = this.query`SELECT ${Book.result['*']} FROM book`.all
 }
 
 
-class BookORM extends Torm {
-  static migrations = {
-    version: '1.1.0',
-    initialization: InitBookMigration,
-    upgrades: [] as (typeof InitBookMigration)[]
+test('upgrade migration versions must not exceed the seed migration version', async (ctx) => {
+
+  class BookORM extends Torm {
+    book = this.model(Book)
   }
 
-  book = this.model(Book)
-}
+  @BookORM.migrations.register()
+  class InitBookMigration extends Migration {
+    static seed = true
+    static version = '1.0.0'
 
-
-test('incompatible migration versions', async (ctx) => {
-  const db = new BookORM(ctx.fixture_path('test.db'))
-  await assert_rejects(() => db.init())
-  db.close()
-
-  // update the version number and our error goes away
-  BookORM.migrations.initialization = Migration.create('1.1.0', `
-    CREATE TABLE book (
+    call = () => this.driver.exec(`CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,
       title TEXT NOT NULL
     )`)
-  const db_fixed = new BookORM(ctx.fixture_path('test.db'))
-  await db_fixed.init()
-  db_fixed.close()
+  }
+
+  assert_throws(() => {
+    @BookORM.migrations.register()
+    class AccidentalFutureMigration extends Migration {
+      static version = '1.2.0'
+      call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
+    }
+  }, MigrationValidationError)
 })
 
+test('newest upgrade version must match seed migrations version', async (ctx) => {
+  const db_1_0_0 = ctx.fixture_path('migrations_1.0.0.db')
+  await Deno.copyFile(ctx.resources.books_db_1_0_0, db_1_0_0)
 
-test('out of sync future migration versions', async (ctx) => {
-  const InitBookMigration = Migration.create('1.1.0', `
-    CREATE TABLE book (
-      id INTEGER NOT NULL PRIMARY KEY,
-      title TEXT NOT NULL
-    )`)
-  const AccidentalFutureMigration = Migration.create('1.2.0', `ALTER TABLE book ADD COLUMN genre TEXT`)
-
-  BookORM.migrations = {
-    version: '1.1.0',
-    initialization: InitBookMigration,
-    upgrades: [AccidentalFutureMigration],
+  class BookORM extends Torm {
+    book = this.model(Book)
   }
-  const db = new BookORM(ctx.fixture_path('test.db'))
-  await assert_rejects(() => db.init())
-  db.close()
 
-  // lets try creating our db now without any upgrades
-  BookORM.migrations.upgrades = []
-  const db_no_upgrades = new BookORM(ctx.fixture_path('test.db'))
-  await db_no_upgrades.init()
-  assert_equals(db_no_upgrades.schemas.version(), '1.1.0')
-  db_no_upgrades.close()
+  @BookORM.migrations.register()
+  class InitBookMigration extends Migration {
+    static seed = true
+    static version = '1.2.0'
 
-  // now, if we change the application version to match our upgrade, and include the upgrade, we will run it
-  BookORM.migrations = {
-    version: '1.2.0',
-    initialization: Migration.create('1.2.0', () => {throw new Error('dont take this code path!')}),
-    upgrades: [AccidentalFutureMigration],
-  }
-  const db_upgraded = new BookORM(ctx.fixture_path('test.db'))
-  await db_upgraded.init()
-  assert_equals(db_upgraded.schemas.version(), '1.2.0')
-  db_upgraded.close()
-})
-
-test('no upgrade migrations', async (ctx) => {
-  const InitBookMigration = Migration.create('1.2.0', `
-    CREATE TABLE book (
+    table_sql = `CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,
       title TEXT NOT NULL,
-      genre TEXT
-    )`)
-  BookORM.migrations = {
-    version: '1.2.0',
-    initialization: InitBookMigration,
-    upgrades: [Migration.create('1.1.0', () => { throw new Error('dont take this code path!') })]
+      genre TEXT,
+      page_count TEXT
+    )`
+    call = () => { throw new Error('do not run the seed migration') }
   }
-  const db = new BookORM(ctx.fixture_path('test.db'))
-  await assert_rejects(() => db.init())
-  db.close()
 
-  // adding an upgrade migration matching the current application version should remove our exceptions
-  BookORM.migrations.upgrades.push(Migration.create('1.2.0', () => { throw new Error('dont take this code path either!')}))
-  const db_fixed = new BookORM(ctx.fixture_path('test.db'))
-  await db_fixed.init()
-  db_fixed.close()
+  @BookORM.migrations.register()
+  class AddGenreMigration extends Migration {
+    static version = '1.1.0'
+    call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
+  }
+
+  // tihs should fail because we are missing a 1.2.0 upgrade, no database actions have been taken yet
+  const db_old = new BookORM(db_1_0_0)
+  assert_throws(() => Migration.validate(db_old), MigrationValidationError)
+
+  // adding in our migration to the latest version will now work
+  @BookORM.migrations.register()
+  class AddPageCountMigration extends Migration {
+    static version = '1.2.0'
+    call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN page_count TEXT`)
+  }
+
+  Migration.validate(db_old)
+  await db_old.init()
+  db_old.close()
+})
+
+test('fresh dbs should not touch upgrade migrations', async (ctx) => {
+
+  class BookORM extends Torm {
+    book = this.model(Book)
+  }
+
+  @BookORM.migrations.register()
+  class InitBookMigration extends Migration {
+    static seed = true
+    static version = '1.2.0'
+
+    create_table = this.query`CREATE TABLE book (
+      id INTEGER NOT NULL PRIMARY KEY,
+      title TEXT NOT NULL,
+      genre TEXT,
+      page_count TEXT
+    )`
+
+    call = () => this.create_table.exec()
+  }
+
+  @BookORM.migrations.register()
+  class AddGenreMigration extends Migration {
+    static version = '1.2.0'
+    call = () => { throw new Error('do not take this codepath') }
+  }
+
+  const db = new BookORM(ctx.fixture_path('test.db'))
+  await db.init()
+  assert_equals([], db.book.list())
 })

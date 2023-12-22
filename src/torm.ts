@@ -3,6 +3,7 @@ import type { ModelClass, ModelInstance } from './model.ts'
 import type { MigrationClass, MigrationInstance } from './migration.ts'
 import { ModelBase } from './model.ts'
 import { MigrationBase } from './migration.ts';
+import { StaticRegistry } from './static_registry_decorator.ts'
 
 interface InitOptions {
   auto_migrate?: boolean
@@ -29,24 +30,17 @@ abstract class SchemasModel extends ModelBase {
 }
 
 
+@StaticRegistry.wrap()
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
   private _driver: D | null = null
   private model_class_registry: ModelClass[] = []
   private model_registry: ModelInstance[] = []
-  private initialization_migrations: MigrationInstance[] = []
-  private upgrades_migrations: MigrationInstance[] = []
-  private _migrations?: {
-    initialization: MigrationInstance[]
-    upgrades: MigrationInstance[]
-    finalize_migration: () => void
-  }
 
-  static migrations?: {
-    version: string
-    initialization?: MigrationClass
-    upgrades?: MigrationClass[]
-  }
+
+  static migrations = new StaticRegistry<MigrationClass>({
+    validate_registry: MigrationBase.validate_registry
+  })
 
   protected model<T extends ModelClass>(model_class: T): InstanceType<T> {
     const model = new model_class(this)
@@ -61,44 +55,23 @@ abstract class TormBase<D extends Driver> {
     throw new Error(`Unexpected state. Torm has status '${this.status}', but driver is not initialized.`)
   }
 
-  public get migrations() {
-    if (this._migrations === undefined) throw new Error(`Torm must be initialized before performing migrations`)
-    return this._migrations
-  }
-
   protected abstract schemas_class: typeof SchemasModel
   public abstract schemas: SchemasModel
   public abstract close(): void
 
-  public constructor() {
-  }
+  public constructor() {}
 
   protected _init(driver: D, options?: InitOptions) {
     const thisConstructor = this.constructor as typeof TormBase<Driver>
-    const application_version = thisConstructor.migrations?.version
+
     this._driver = driver
-
-    this._migrations = {
-
-      initialization: [thisConstructor.migrations?.initialization]
-        .concat(this.model_class_registry
-          .map(model_class => model_class.migrations?.initialization)
-          .flat())
-        .filter(migration_class => migration_class !== undefined)
-        .map(migration_class => new migration_class!(this)),
-
-      upgrades: (thisConstructor.migrations?.upgrades ?? [])
-      .concat(this.model_class_registry
-        .flatMap(model_class => model_class.migrations?.upgrades ?? []))
-      .map(migration_class => new migration_class(this)),
-
-      finalize_migration: this.initialize_models,
-    }
 
     const { auto_migrate = true } = options ?? {}
 
 
     this.schemas.prepare_queries(driver)
+
+    const application_version = MigrationBase.application_version(this)
 
     if (application_version !== undefined) {
       MigrationBase.validate(this)
@@ -109,6 +82,7 @@ abstract class TormBase<D extends Driver> {
           this.status = 'outdated'
           MigrationBase.upgrade(this)
         }
+        this.initialize_models()
       }
       if (MigrationBase.outdated(this)) {
         this.status = 'outdated'

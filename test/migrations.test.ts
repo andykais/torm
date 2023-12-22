@@ -31,10 +31,19 @@ class Book extends Model('book', {
     INNER JOIN author ON author.id = author_id
     WHERE title = ${Book.params.title}`.one
 }
+
 class BookORM extends Torm {
-  static migrations = {
-    version: '1.2.0',
-    initialization: Migration.create('1.2.0', `
+  book = this.model(Book)
+  author = this.model(Author)
+}
+
+@BookORM.migrations.register()
+class InitMigration extends Migration {
+  static seed = true // TODO temporary, replace with SeedMigration class
+
+  static version = '1.2.0'
+
+  call = () => this.driver.exec(`
       CREATE TABLE IF NOT EXISTS author (
         id INTEGER NOT NULL PRIMARY KEY,
         first_name TEXT,
@@ -48,15 +57,87 @@ class BookORM extends Torm {
         published_at DATETIME,
         FOREIGN KEY(author_id) REFERENCES author(id)
       );
-    `),
-    upgrades: [
-      Migration.create('1.2.0', 'ALTER TABLE book ADD COLUMN published_at DATETIME'),
-    ]
-  }
+  `)
+}
 
+@BookORM.migrations.register()
+class PublishedAtMigration extends Migration {
+  static version = '1.2.0'
+
+  call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN published_at DATETIME`)
+}
+
+// new alternate thought
+/*
+@BookORM.migrations.new()
+class InitMigration extends Migration {
+  upgrade = this.query`
+    CREATE TABLE IF NOT EXISTS author (
+      id INTEGER NOT NULL PRIMARY KEY,
+      first_name TEXT,
+      last_name TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS book (
+      id INTEGER NOT NULL PRIMARY KEY,
+      author_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      data TEXT,
+      published_at DATETIME,
+      FOREIGN KEY(author_id) REFERENCES author(id)
+    );
+  `
+}
+
+BookORM.migrations.register()
+class PublishedAtMigration extends Migration {
+  upgrade = this.query`ALTER TABLE book ADD COLUMN published_at DATETIME`
+  downgrade = () => { throw new Error('unimplemented') }
+}
+*/
+
+
+
+
+// Alternate thought:
+/*
+class BookORM extends Torm {
   book = this.model(Book)
   author = this.model(Author)
 }
+BookORM.migrations.initialization = Migration.create('1.2.0', `
+  CREATE TABLE IF NOT EXISTS author (
+    id INTEGER NOT NULL PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS book (
+    id INTEGER NOT NULL PRIMARY KEY,
+    author_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    data TEXT,
+    published_at DATETIME,
+    FOREIGN KEY(author_id) REFERENCES author(id)
+  );
+`)
+BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD COLUMN published_at DATETIME'))
+
+BookORM.migrations.initialization = Migration.create('1.2.0', `
+  CREATE TABLE IF NOT EXISTS author (
+    id INTEGER NOT NULL PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS book (
+    id INTEGER NOT NULL PRIMARY KEY,
+    author_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    data TEXT,
+    published_at DATETIME,
+    FOREIGN KEY(author_id) REFERENCES author(id)
+  );
+`)
+BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD COLUMN published_at DATETIME'))
+*/
 
 
 test('auto migration', async (ctx) => {
@@ -99,6 +180,7 @@ test('manual migration', async (ctx) => {
   Migration.upgrade(db_old) // migrating to the most recent version will also initialize models
   assert_equals('1.2.0', db_old.schemas.version())
   assert_equals(false, Migration.outdated(db_old))
+  db_old.init({ auto_migrate: false }) // a second call will initialize models. TODO maybe add an "init_only: true" flag
 
   assert_equals([{
     id: 1,
