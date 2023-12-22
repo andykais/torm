@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Vars, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { Model, Vars, Torm, SeedMigration, field } from '../drivers/sqlite.ts'
 
 
 const vars = Vars({
@@ -12,13 +12,6 @@ class Book extends Model('book', {
   id:    field.number(),
   title: field.string(),
 }) {
-  static migrations = {
-    initialization: Migration.create('1.0.0', `
-      CREATE TABLE book (
-        id INTEGER NOT NULL PRIMARY KEY,
-        title TEXT NOT NULL
-      )`)
-  }
   create = this.query`INSERT INTO book (title) VALUES (${Book.params.title})`.exec
   // other potential designs...
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params('limit').number()}`.exec
@@ -29,8 +22,18 @@ class Book extends Model('book', {
 }
 
 class BookORM extends Torm {
-  static migrations = { version: '1.0.0' }
   book = this.model(Book)
+}
+
+@BookORM.migrations.register()
+class BookMigration extends SeedMigration {
+  static version = '1.0.0'
+  call = () => this.prepare`
+    CREATE TABLE book (
+      id INTEGER NOT NULL PRIMARY KEY,
+      title TEXT NOT NULL
+    )
+  `.exec()
 }
 
 test('fields without models', async (ctx) => {

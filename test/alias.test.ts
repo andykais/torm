@@ -1,18 +1,11 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { Model, Torm, SeedMigration, field } from '../drivers/sqlite.ts'
 
 
 class TagGroup extends Model('tag_group', {
   id:         field.number(),
   name:       field.string(),
 }) {
-  static migrations = {
-    initialization: Migration.create('1.0.0', `
-      CREATE TABLE tag_group (
-        id INTEGER NOT NULL PRIMARY KEY,
-        name TEXT NOT NULL
-      )`)
-  }
   create = this.query`INSERT INTO tag_group (name) VALUES (${TagGroup.params.name})`.exec
 }
 
@@ -21,16 +14,6 @@ class Tag extends Model('tag', {
   name:         field.string(),
   tag_group_id: field.number()
 }) {
-  static migrations = {
-    initialization: Migration.create('1.0.0', `
-      CREATE TABLE tag (
-        id INTEGER NOT NULL PRIMARY KEY,
-        name TEXT NOT NULL,
-        tag_group_id INTEGER NOT NULL,
-        FOREIGN KEY(tag_group_id) REFERENCES tag_group(id)
-      )`)
-  }
-
   create = this.query`INSERT INTO tag (name, tag_group_id) VALUES (${Tag.params.name}, ${Tag.params.tag_group_id})`.exec
 
   search_tag_and_group = this.query`SELECT ${Tag.result.name}, ${TagGroup.result.name.as('group')} FROM tag
@@ -41,11 +24,35 @@ class Tag extends Model('tag', {
 }
 
 class TagORM extends Torm {
-  static migrations = { version: '1.0.0' }
-
   // models
   tag_group = this.model(TagGroup)
   tag       = this.model(Tag)
+}
+
+@TagORM.migrations.register()
+class TagInitMigration extends SeedMigration {
+  static version = '1.0.0'
+
+  call = () => this.prepare`
+    CREATE TABLE tag_group (
+      id INTEGER NOT NULL PRIMARY KEY,
+      name TEXT NOT NULL
+    )
+  `.exec()
+}
+
+@TagORM.migrations.register()
+class TagGroupInitMigration extends SeedMigration {
+  static version = '1.0.0'
+
+  call = () => this.prepare`
+    CREATE TABLE tag (
+      id INTEGER NOT NULL PRIMARY KEY,
+      name TEXT NOT NULL,
+      tag_group_id INTEGER NOT NULL,
+      FOREIGN KEY(tag_group_id) REFERENCES tag_group(id)
+    )
+  `.exec()
 }
 
 test('field alias names', async (ctx) => {

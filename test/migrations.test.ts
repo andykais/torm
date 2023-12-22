@@ -1,5 +1,5 @@
 import { test, assert_equals } from './util.ts'
-import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { Model, Torm, Migration, SeedMigration, field } from '../drivers/sqlite.ts'
 
 
 class Author extends Model('author', {
@@ -38,8 +38,7 @@ class BookORM extends Torm {
 }
 
 @BookORM.migrations.register()
-class InitMigration extends Migration {
-  static seed = true // TODO temporary, replace with SeedMigration class
+class InitMigration extends SeedMigration {
 
   static version = '1.2.0'
 

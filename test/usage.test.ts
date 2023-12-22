@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, Migration, field } from '../drivers/sqlite.ts'
+import { Model, Torm, SeedMigration, field } from '../drivers/sqlite.ts'
 
 class Author extends Model('author', {
   id:         field.number(),
@@ -7,16 +7,6 @@ class Author extends Model('author', {
   last_name:  field.string(),
   birthday:   field.datetime().optional(),
 }) {
-  static migrations = {
-    initialization: Migration.create('1.0.0', `
-      CREATE TABLE IF NOT EXISTS author (
-        id INTEGER NOT NULL PRIMARY KEY,
-        first_name TEXT,
-        last_name TEXT NOT NULL,
-        birthday TEXT
-      )`)
-  }
-
   create = this.query`INSERT INTO author (first_name, last_name, birthday) VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`.exec
   get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
 }
@@ -28,18 +18,6 @@ class Book extends Model('book', {
   data:       field.json(),
   language:   field.string().default('english'),
 }) {
-  static migrations = {
-    initialization: Migration.create('1.0.0', `
-      CREATE TABLE book (
-        id INTEGER NOT NULL PRIMARY KEY,
-        author_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        data TEXT,
-        language TEXT NOT NULL,
-        FOREIGN KEY(author_id) REFERENCES author(id)
-      )`)
-  }
-
   create = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec
   get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
 
@@ -49,12 +27,41 @@ class Book extends Model('book', {
 }
 
 class BookORM extends Torm {
-  static migrations = { version: '1.0.0' }
-
   // models
   author = this.model(Author)
   book   = this.model(Book)
 }
+
+@BookORM.migrations.register()
+class AuthorSeedMigration extends SeedMigration {
+  static version = '1.0.0'
+
+  call = () => this.prepare`
+    CREATE TABLE IF NOT EXISTS author (
+      id INTEGER NOT NULL PRIMARY KEY,
+      first_name TEXT,
+      last_name TEXT NOT NULL,
+      birthday TEXT
+    )
+  `.exec()
+}
+
+@BookORM.migrations.register()
+class BookSeedMigration extends SeedMigration {
+  static version = '1.0.0'
+
+  call = () => this.prepare`
+    CREATE TABLE book (
+      id INTEGER NOT NULL PRIMARY KEY,
+      author_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      data TEXT,
+      language TEXT NOT NULL,
+      FOREIGN KEY(author_id) REFERENCES author(id)
+    )
+  `.exec()
+}
+
 
 
 

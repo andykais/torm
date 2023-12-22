@@ -4,7 +4,7 @@ import { Vars, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
-import { MigrationBase, type MigrationClass } from '../src/migration.ts'
+import { MigrationBase, SeedMigrationBase, type MigrationClass } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
 
 
@@ -16,7 +16,6 @@ class Statement<
   public one = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
     const row = this.stmt.get<RawRowData>(this.encode_params(params))
     if (row) return this.decode_result(row)
-    // throw new Error('undefined one() is unimplemented')
   }
 
   public all = (...[params]: OptionalOnEmpty<Params>) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
@@ -43,6 +42,10 @@ abstract class DriverModel extends ModelBase {
 }
 class TempModelNonAbstract extends DriverModel {}
 const Model = WithStaticSchema(TempModelNonAbstract)
+
+abstract class SeedMigration extends SeedMigrationBase {
+  protected create_stmt = Statement.create
+}
 
 abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
@@ -179,6 +182,7 @@ export {
   Statement,
   Model,
   Migration,
+  SeedMigration,
 }
 
 type Database = sqlite3.Database

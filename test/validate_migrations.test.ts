@@ -1,5 +1,5 @@
 import { test, assert_equals, assert_rejects, assert_throws } from './util.ts'
-import { Model, Torm, Migration, MigrationValidationError, field } from '../drivers/sqlite.ts'
+import { Model, Torm, Migration, SeedMigration, MigrationValidationError, field } from '../drivers/sqlite.ts'
 
 
 class Book extends Model('book', {
@@ -17,8 +17,7 @@ test('upgrade migration versions must not exceed the seed migration version', as
   }
 
   @BookORM.migrations.register()
-  class InitBookMigration extends Migration {
-    static seed = true
+  class InitBookMigration extends SeedMigration {
     static version = '1.0.0'
 
     call = () => this.driver.exec(`CREATE TABLE book (
@@ -45,8 +44,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
   }
 
   @BookORM.migrations.register()
-  class InitBookMigration extends Migration {
-    static seed = true
+  class InitBookMigration extends SeedMigration {
     static version = '1.2.0'
 
     table_sql = `CREATE TABLE book (
@@ -87,8 +85,7 @@ test('fresh dbs should not touch upgrade migrations', async (ctx) => {
   }
 
   @BookORM.migrations.register()
-  class InitBookMigration extends Migration {
-    static seed = true
+  class InitBookMigration extends SeedMigration {
     static version = '1.2.0'
 
     create_table = this.query`CREATE TABLE book (

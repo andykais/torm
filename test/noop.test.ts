@@ -1,9 +1,13 @@
 import { test, assert_equals } from './util.ts'
-import { Torm } from '../drivers/sqlite.ts'
+import { Torm, SeedMigration } from '../drivers/sqlite.ts'
 
 
-class EmptyORM extends Torm {
-  static migrations = { version: '1.0.0' }
+class EmptyORM extends Torm {}
+
+@EmptyORM.migrations.register()
+class EmptyMigration extends SeedMigration {
+  static version = '1.0.0'
+  call() {}
 }
 
 test('empty torm', async () => {

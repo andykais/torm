@@ -38,17 +38,16 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
   }
 
   public static validate_registry(migration_registry: MigrationClass[]) {
-    function is_seed(obj: any) {
-      return obj.seed
-    }
-
-    let first_seed_migration: MigrationClass | undefined
     let prev_migration: MigrationClass | undefined
 
     for (const migration of migration_registry) {
+      if (!semver.valid(migration.version)) {
+        throw new MigrationValidationError(`Migrations must define a static version property. Migration\n${migration}\ndefined ${migration.version}`)
+      }
+
       if (prev_migration) {
-        if (is_seed(prev_migration)) {
-          if (is_seed(migration)) {
+        if (MigrationBase.is_seed_migration(prev_migration)) {
+          if (MigrationBase.is_seed_migration(migration)) {
             if (!semver.eq(prev_migration.version, migration.version)) {
               throw new MigrationValidationError(`All seed migrations must keep the same version.`)
             }
@@ -71,7 +70,7 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
   public static validate(torm: TormBase<Driver>) {
     const migrations = this.parse_migration_registry(torm)
 
-    const application_version = MigrationBase.application_version(torm)
+    const application_version = migrations.version
     if (application_version === undefined) throw new Error('Misconfigured migration: expected a configured application version, found undefined')
     for (const migration of migrations.initialization) {
       if (migration.version !== application_version) {
@@ -79,7 +78,7 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
       }
     }
 
-    if (migrations.upgrades) {
+    if (migrations.upgrades.length) {
       const last_migration = migrations.upgrades.at(-1)!
       if (!semver.eq(last_migration.version, application_version)) {
         throw new MigrationValidationError(`The last upgrade migration version must match the current application version`)
@@ -151,15 +150,11 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
     torm.schemas.unsafe_version_set(next_version)
   }
 
-  private static is_seed_migration(obj: object) {
-    if ((obj as any).seed) return true
-    else return false
-
-    // TODO impl SeedMigration
-    // if (migration === SeedMigration) return true
-    // const prototype = Object.getPrototypeOf(migration)
-    // if (prototype) return is_seed(prototype)
-    // return false
+  private static is_seed_migration(migration: object): boolean {
+    if (migration === SeedMigrationBase) return true
+    const prototype = Object.getPrototypeOf(migration)
+    if (prototype) return MigrationBase.is_seed_migration(prototype)
+    return false
   }
 
   private static parse_migration_registry(torm: TormBase<Driver>) {
@@ -167,11 +162,11 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
     const registry = thisConstructor.migrations.registry
 
     const initialization = registry
-      .filter(migration_class => this.is_seed_migration(migration_class))
+      .filter(migration_class => MigrationBase.is_seed_migration(migration_class))
       .map(migration_class => new migration_class(torm))
 
     const upgrades = registry
-      .filter(migration_class => !this.is_seed_migration(migration_class))
+      .filter(migration_class => MigrationBase.is_seed_migration(migration_class) === false)
       .map(migration_class => new migration_class(torm))
 
     const application_version = initialization.at(0)?.version
@@ -184,5 +179,7 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
   }
 }
 
-export { MigrationBase, MigrationError, MigrationValidationError }
+abstract class SeedMigrationBase extends MigrationBase {}
+
+export { MigrationBase, SeedMigrationBase, MigrationError, MigrationValidationError }
 export type { Version, MigrationClass, MigrationInstance, MigrationRegistry }
