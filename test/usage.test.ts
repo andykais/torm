@@ -34,7 +34,7 @@ class BookORM extends Torm {
 
 @BookORM.migrations.register()
 class AuthorSeedMigration extends SeedMigration {
-  static version = '1.0.0'
+  version = '1.0.0'
 
   call = () => this.prepare`
     CREATE TABLE IF NOT EXISTS author (
@@ -48,7 +48,7 @@ class AuthorSeedMigration extends SeedMigration {
 
 @BookORM.migrations.register()
 class BookSeedMigration extends SeedMigration {
-  static version = '1.0.0'
+  version = '1.0.0'
 
   call = () => this.prepare`
     CREATE TABLE book (

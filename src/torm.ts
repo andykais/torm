@@ -1,9 +1,7 @@
 import type { Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
-import type { MigrationClass, MigrationInstance } from './migration.ts'
 import { ModelBase } from './model.ts'
-import { MigrationBase } from './migration.ts';
-import { StaticRegistry } from './static_registry_decorator.ts'
+import { MigrationsManager, MigrationRegistry } from './migration.ts';
 
 interface InitOptions {
   auto_migrate?: boolean
@@ -30,7 +28,6 @@ abstract class SchemasModel extends ModelBase {
 }
 
 
-@StaticRegistry.wrap()
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
   private _driver: D | null = null
@@ -38,9 +35,7 @@ abstract class TormBase<D extends Driver> {
   private model_registry: ModelInstance[] = []
 
 
-  static migrations = new StaticRegistry<MigrationClass>({
-    validate_registry: MigrationBase.validate_registry
-  })
+  static migrations = new MigrationRegistry()
 
   protected model<T extends ModelClass>(model_class: T): InstanceType<T> {
     const model = new model_class(this)
@@ -71,20 +66,24 @@ abstract class TormBase<D extends Driver> {
 
     this.schemas.prepare_queries(driver)
 
-    const application_version = MigrationBase.application_version(this)
+    const migrations_manager = new MigrationsManager(this)
+
+    const application_version = migrations_manager.application_version()
 
     if (application_version !== undefined) {
-      MigrationBase.validate(this)
-      if (MigrationBase.is_new(this)) MigrationBase.initialize(this)
+      migrations_manager.validate()
+      if (migrations_manager.is_database_initialized()) {
+        migrations_manager.initialize_database()
+      }
 
       if (auto_migrate) {
-        while (MigrationBase.outdated(this)) {
+        while (migrations_manager.is_database_outdated()) {
           this.status = 'outdated'
-          MigrationBase.upgrade(this)
+          migrations_manager.upgrade_database()
         }
         this.initialize_models()
       }
-      if (MigrationBase.outdated(this)) {
+      if (migrations_manager.is_database_outdated()) {
         this.status = 'outdated'
       } else {
         this.initialize_models()

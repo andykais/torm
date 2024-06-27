@@ -30,7 +30,13 @@ abstract class ModelBase implements ModelInstance {
   }
 
   // public constructor(protected torm: TormBase<Driver>, private options: ModelOptions) {}
-  public constructor(protected torm: TormBase<Driver>) {}
+  public constructor(protected torm?: TormBase<Driver>) {}
+  // if torm is not set in the constructor (e.g. like for migrations where we instantiate early for decorators to function)
+  public init(torm: TormBase<Driver>) {
+    if (this.torm) throw new Error('torm property is already initialized')
+    this.torm = torm
+  }
+
 
   public prepare_queries(driver?: Driver) {
     for (const stmt of this.registered_stmts) {
@@ -39,6 +45,7 @@ abstract class ModelBase implements ModelInstance {
   }
 
   public get driver() {
+    if (!this.torm) throw new Error('internal error: torm was not instantiated on the model')
     return this.torm.driver
   }
 

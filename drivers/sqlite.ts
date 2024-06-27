@@ -56,7 +56,7 @@ class SqliteMasterModel extends Model('sqlite_master', {
   sql: field.string(),
 }) {}
 class InitializeTormMetadata extends Migration {
-  static version = '0.1.0'
+  version = '0.1.0'
   call(driver?: sqlite3.Database) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
     driver.run(`
