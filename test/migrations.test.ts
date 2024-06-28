@@ -40,7 +40,7 @@ class BookORM extends Torm {
 @BookORM.migrations.register()
 class InitMigration extends SeedMigration {
 
-  static version = '1.2.0'
+  version = '1.2.0'
 
   call = () => this.driver.exec(`
       CREATE TABLE IF NOT EXISTS author (
@@ -61,7 +61,7 @@ class InitMigration extends SeedMigration {
 
 @BookORM.migrations.register()
 class PublishedAtMigration extends Migration {
-  static version = '1.2.0'
+  version = '1.2.0'
 
   call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN published_at DATETIME`)
 }
@@ -175,10 +175,10 @@ test('manual migration', async (ctx) => {
   const db_old = new BookORM(db_old_path)
   await db_old.init({ auto_migrate: false })
   assert_equals('1.0.0', db_old.schemas.version())
-  assert_equals(true, Migration.outdated(db_old))
-  Migration.upgrade(db_old) // migrating to the most recent version will also initialize models
+  assert_equals(true, db_old.migrations.is_database_outdated())
+  db_old.migrations.upgrade_database()
   assert_equals('1.2.0', db_old.schemas.version())
-  assert_equals(false, Migration.outdated(db_old))
+  assert_equals(false, db_old.migrations.is_database_outdated())
   db_old.init({ auto_migrate: false }) // a second call will initialize models. TODO maybe add an "init_only: true" flag
 
   assert_equals([{

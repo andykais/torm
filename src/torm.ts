@@ -31,6 +31,7 @@ abstract class SchemasModel extends ModelBase {
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
   private _driver: D | null = null
+  private migrations_manager: MigrationsManager | undefined
   private model_class_registry: ModelClass[] = []
   private model_registry: ModelInstance[] = []
 
@@ -50,6 +51,11 @@ abstract class TormBase<D extends Driver> {
     throw new Error(`Unexpected state. Torm has status '${this.status}', but driver is not initialized.`)
   }
 
+  public get migrations() {
+    if (this.migrations_manager) return this.migrations_manager
+    throw new Error(`MigrationsManager cannot be directly accessed until torm is initialized`)
+  }
+
   protected abstract schemas_class: typeof SchemasModel
   public abstract schemas: SchemasModel
   public abstract close(): void
@@ -66,24 +72,28 @@ abstract class TormBase<D extends Driver> {
 
     this.schemas.prepare_queries(driver)
 
-    const migrations_manager = new MigrationsManager(this)
+    if (!this.migrations_manager) {
+      // Torm::init can be called multiple times
+      const migrations_manager = new MigrationsManager(this)
+      this.migrations_manager = migrations_manager
+    }
 
-    const application_version = migrations_manager.application_version()
+    const application_version = this.migrations_manager.application_version()
 
     if (application_version !== undefined) {
-      migrations_manager.validate()
-      if (migrations_manager.is_database_initialized()) {
-        migrations_manager.initialize_database()
+      this.migrations_manager.validate()
+      if (this.migrations_manager.is_database_initialized()) {
+        this.migrations_manager.initialize_database()
       }
 
       if (auto_migrate) {
-        while (migrations_manager.is_database_outdated()) {
+        while (this.migrations_manager.is_database_outdated()) {
           this.status = 'outdated'
-          migrations_manager.upgrade_database()
+          this.migrations_manager.upgrade_database()
         }
         this.initialize_models()
       }
-      if (migrations_manager.is_database_outdated()) {
+      if (this.migrations_manager.is_database_outdated()) {
         this.status = 'outdated'
       } else {
         this.initialize_models()

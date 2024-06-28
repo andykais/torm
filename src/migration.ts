@@ -11,13 +11,16 @@ interface MigrationRegistry {
 }
 
 
-class MigrationRegistry extends StaticRegistry<MigrationClass, MigrationInstance> {
-  protected update_registry(registry: MigrationInstance[], item: MigrationClass) {
-    const migration_instance = new item()
+class MigrationRegistry extends StaticRegistry<MigrationClass> {
+  #validation_registry: MigrationInstance[] = []
+
+  protected update_registry(registry: MigrationClass[], migration_class: MigrationClass) {
+    const migration_instance = new migration_class(undefined)
     // TODO add validation
-    const updated_registry = [...registry, migration_instance]
+    const updated_registry = [...this.#validation_registry, migration_instance]
     MigrationRegistry.validate_registry(updated_registry)
-    registry.push(migration_instance)
+    this.#validation_registry.push(migration_instance)
+    registry.push(migration_class)
   }
 
   private static validate_registry(migration_registry: MigrationInstance[]) {
@@ -67,15 +70,19 @@ class MigrationsManager {
     initialization: [] as MigrationInstance[],
     upgrades: [] as MigrationInstance[],
   }
-  public registry: MigrationInstance[]
+  public registry: MigrationClass[]
 
   public constructor(private torm: TormBase<Driver>) {
     const thisConstructor = torm.constructor as typeof TormBase<Driver>
     this.registry = thisConstructor.migrations.registry
 
     let application_version: Version | undefined
-    for (const migration of this.registry) {
-      migration.init(torm)
+    // TODO so this is a problem. We have to instantiate a Migration (Model) class to find out the Migration::version because static properties cannot be accessed within the decorator
+    // the problem is instantiating and storing migration classes statically on a Torm class means each instantiated torm database is going to use the same migration class instance
+    // I _think_ this means the right approach is storing uninstantiated classes statically and instantiating each time we instantiate Torm
+    // I did like the idea that my migrations would error out at registration time, but perhaps thats overkill or even not very useful since we cant catch those exceptions very well
+    for (const migration_class of this.registry) {
+      const migration = new migration_class(torm)
       if (this.is_seed_migration(migration)) {
         this.#migrations.initialization.push(migration)
         application_version = migration.version
@@ -166,8 +173,7 @@ class MigrationsManager {
   public initialize_database() {
     const schemas_class = this.#torm.schemas.constructor as typeof ModelBase
     this.#torm.schemas.prepare_queries(this.#torm.driver)
-    const schemas_init = new schemas_class.migrations!.initialization!()
-    schemas_init.init(this.#torm)
+    const schemas_init = new schemas_class.migrations!.initialization!(this.#torm)
     schemas_init.prepare_queries(this.#torm.driver)
     schemas_init.call(this.#torm.driver)
 
@@ -182,7 +188,7 @@ class MigrationsManager {
 
 interface MigrationClass {
   // version: Version
-  new(): MigrationInstance
+  new(torm: TormBase<Driver> | undefined): MigrationInstance
 }
 
 interface MigrationInstance extends ModelBase {
