@@ -20,6 +20,13 @@ interface ModelInstance {
   prepare_queries: (driver?: Driver) => void
 }
 
+interface QueryFn {
+  <T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>>
+  one: <T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T) => Statement<StatementParams<T>, StatementResult<T>>['one']
+  many: <T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T) => Statement<StatementParams<T>, StatementResult<T>>['all']
+  exec: <T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T) => Statement<StatementParams<T>, StatementResult<T>>['exec']
+}
+
 abstract class ModelBase implements ModelInstance {
   private _torm: TormBase<Driver> | null = null
   private registered_stmts: Statement<any, any>[] = []
@@ -29,8 +36,15 @@ abstract class ModelBase implements ModelInstance {
     upgrades?: MigrationClass[]
   }
 
-  // public constructor(protected torm: TormBase<Driver>, private options: ModelOptions) {}
-  public constructor(protected torm?: TormBase<Driver>) {}
+  public query: QueryFn
+
+  public constructor(protected torm?: TormBase<Driver>) {
+    this.query = this.query_internal as QueryFn
+    this.query.exec = this.query_exec.bind(this)
+    this.query.many = this.query_many.bind(this)
+    this.query.one = this.query_one.bind(this)
+  }
+
   // if torm is not set in the constructor (e.g. like for migrations where we instantiate early for decorators to function)
   public init(torm: TormBase<Driver>) {
     if (this.torm) throw new Error('torm property is already initialized')
@@ -49,10 +63,28 @@ abstract class ModelBase implements ModelInstance {
     return this.torm.driver
   }
 
-  protected query<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
+  private query_internal<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const stmt = this.build_stmt(strings, ...params)
     this.registered_stmts.push(stmt)
     return stmt
+  }
+
+  private query_exec<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>>['exec'] {
+    const stmt = this.build_stmt(strings, ...params)
+    this.registered_stmts.push(stmt)
+    return stmt.exec
+  }
+
+  private query_one<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>>['one'] {
+    const stmt = this.build_stmt(strings, ...params)
+    this.registered_stmts.push(stmt)
+    return stmt.one
+  }
+
+  private query_many<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>>['all'] {
+    const stmt = this.build_stmt(strings, ...params)
+    this.registered_stmts.push(stmt)
+    return stmt.all
   }
 
   protected prepare<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {

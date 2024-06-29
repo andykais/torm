@@ -9,11 +9,13 @@ class Author extends Model('author', {
   birthday:   field.datetime().optional(),
 }) {
   queries = {
-    create: this.query`INSERT INTO author (first_name, last_name, birthday)
-                       VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`.exec,
+    create:
+      this.query.exec`INSERT INTO author (first_name, last_name, birthday)
+                      VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`,
 
-    get:    this.query`SELECT ${Author.result['*']} FROM author
-                       WHERE id = ${Author.params.id}`.one,
+    get:
+      this.query.one `SELECT ${Author.result['*']} FROM author
+                      WHERE id = ${Author.params.id}`,
   }
 }
 
@@ -26,17 +28,17 @@ class Book extends Model('book', {
   language:   field.string().default('english'),
 }) {
   queries = {
-    create:           this.query`
-                        INSERT INTO book (title, author_id, language, data)
-                        VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec,
+    create:
+      this.query.exec`INSERT INTO book (title, author_id, language, data)
+                      VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`,
 
-    get:              this.query`
-                        SELECT ${Book.result['*']} FROM book
-                        WHERE id = ${Book.params.id}`.one,
+    get:
+      this.query.one `SELECT ${Book.result['*']} FROM book
+                      WHERE id = ${Book.params.id}`,
 
-    list_with_author: this.query`
-                        SELECT ${[Book.result.title, Author.result.first_name, Author.result.last_name]} FROM book
-                        INNER JOIN author ON author_id = Author.id`.all,
+    list_with_author:
+      this.query.many`SELECT ${[Book.result.title, Author.result.first_name, Author.result.last_name]} FROM book
+                      INNER JOIN author ON author_id = Author.id`,
   }
 
 }
