@@ -1,6 +1,9 @@
 # TORM
-A typesafe database ORM that exposes the full power of handwritten sql statements to the developer.
+[![JSR](https://jsr.io/badges/@andykais/torm)](https://jsr.io/@andykais/torm)
+[![Checks](https://github.com/andykais/torm/actions/workflows/ci.yml/badge.svg)](https://github.com/andykais/torm/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/andykais/torm)](https://github.com/andykais/torm/blob/master/LICENSE)
 
+A typesafe database ORM that exposes the full power of handwritten sql statements to the developer.
 
 
 ## Getting Started
