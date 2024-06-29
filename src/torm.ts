@@ -31,11 +31,15 @@ abstract class SchemasModel extends ModelBase {
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
   private _driver: D | null = null
-  private migrations_manager: MigrationsManager | undefined
+  private migrations_manager: MigrationsManager
   private model_class_registry: ModelClass[] = []
   private model_registry: ModelInstance[] = []
 
 
+  // NOTE this is currently a weird setup.
+  // Torm::migrations is by default statically defined on Torm. That means multiple classes end up sharing the same state
+  // setting it on your class like this solves that, but its not intuitive.
+  // a decent solution here is to make this undefined by default. So migrations become an explicit thing you set up and manage
   static migrations = new MigrationRegistry()
 
   protected model<T extends ModelClass>(model_class: T): InstanceType<T> {
@@ -58,9 +62,17 @@ abstract class TormBase<D extends Driver> {
 
   protected abstract schemas_class: typeof SchemasModel
   public abstract schemas: SchemasModel
-  public abstract close(): void
+  public abstract close_driver(): void
 
-  public constructor() {}
+  public close() {
+    if (this.status === 'uninitialized') return
+    this.close_driver()
+  }
+
+  public constructor() {
+    // Torm::init can be called multiple times
+    this.migrations_manager = new MigrationsManager(this)
+  }
 
   protected _init(driver: D, options?: InitOptions) {
     const thisConstructor = this.constructor as typeof TormBase<Driver>
@@ -71,12 +83,6 @@ abstract class TormBase<D extends Driver> {
 
 
     this.schemas.prepare_queries(driver)
-
-    if (!this.migrations_manager) {
-      // Torm::init can be called multiple times
-      const migrations_manager = new MigrationsManager(this)
-      this.migrations_manager = migrations_manager
-    }
 
     const application_version = this.migrations_manager.application_version()
 

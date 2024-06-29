@@ -66,7 +66,7 @@ class BookSeedMigration extends SeedMigration {
 
 
 test('usage', async (ctx) => {
-  const db = new BookORM(ctx.fixture_path('usage.db'))
+  const db = new BookORM(ctx.create_fixture_path('usage.db'))
   await db.init()
 
   const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })

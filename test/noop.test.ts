@@ -6,7 +6,7 @@ class EmptyORM extends Torm {}
 
 @EmptyORM.migrations.register()
 class EmptyMigration extends SeedMigration {
-  static version = '1.0.0'
+  version = '1.0.0'
   call() {}
 }
 

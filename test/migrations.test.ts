@@ -140,12 +140,12 @@ BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD
 
 
 test('auto migration', async (ctx) => {
-  let db_new = new BookORM(ctx.fixture_path('migrations.db'))
+  let db_new = new BookORM(ctx.create_fixture_path('migrations.db'))
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
 
-  const db_old = new BookORM(ctx.fixture_path('migrations_1.0.0.db'))
+  const db_old = new BookORM(ctx.create_fixture_path('migrations_1.0.0.db'))
   await db_old.init()
   assert_equals('1.2.0', db_old.schemas.version())
   const tables_old = db_old.schemas.tables()
@@ -156,7 +156,7 @@ test('auto migration', async (ctx) => {
   db_old.close()
 
   // check that we dont run migrations twice
-  db_new = new BookORM(ctx.fixture_path('migrations.db'))
+  db_new = new BookORM(ctx.create_fixture_path('migrations.db'))
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   assert_equals(tables_new, db_new.schemas.tables())
@@ -164,7 +164,7 @@ test('auto migration', async (ctx) => {
 })
 
 test('manual migration', async (ctx) => {
-  const db_old_path = ctx.fixture_path('migrations_1.0.0.db')
+  const db_old_path = ctx.create_fixture_path('migrations_1.0.0.db')
   await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
 
   const db_new = new BookORM('test/fixtures/migrations.db')

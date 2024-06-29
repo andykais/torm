@@ -31,7 +31,7 @@ class TagORM extends Torm {
 
 @TagORM.migrations.register()
 class TagInitMigration extends SeedMigration {
-  static version = '1.0.0'
+  version = '1.0.0'
 
   call = () => this.prepare`
     CREATE TABLE tag_group (
@@ -43,7 +43,7 @@ class TagInitMigration extends SeedMigration {
 
 @TagORM.migrations.register()
 class TagGroupInitMigration extends SeedMigration {
-  static version = '1.0.0'
+  version = '1.0.0'
 
   call = () => this.prepare`
     CREATE TABLE tag (
@@ -56,7 +56,7 @@ class TagGroupInitMigration extends SeedMigration {
 }
 
 test('field alias names', async (ctx) => {
-  const db = new TagORM(ctx.fixture_path('test.db'))
+  const db = new TagORM(ctx.create_fixture_path('test.db'))
   await db.init()
 
   const artist_tag_group_id = db.tag_group.create({ name: 'artist' }).last_insert_row_id

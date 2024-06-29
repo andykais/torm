@@ -27,7 +27,7 @@ class BookORM extends Torm {
 
 @BookORM.migrations.register()
 class BookMigration extends SeedMigration {
-  static version = '1.0.0'
+  version = '1.0.0'
   call = () => this.prepare`
     CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,
@@ -37,7 +37,7 @@ class BookMigration extends SeedMigration {
 }
 
 test('fields without models', async (ctx) => {
-  const db = new BookORM(ctx.fixture_path('test.db'))
+  const db = new BookORM(ctx.create_fixture_path('test.db'))
   await db.init()
 
   db.book.create({ title: 'The Hobbit' })

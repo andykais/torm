@@ -4,6 +4,7 @@ import { StaticRegistry } from './static_registry_decorator.ts'
 import type { Driver } from './util.ts'
 import type { TormBase } from './torm.ts'
 
+
 type Version = string
 interface MigrationRegistry {
   initialization?: MigrationClass
