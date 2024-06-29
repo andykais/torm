@@ -57,6 +57,10 @@ export interface Statement<Params extends SchemaGeneric, Result extends SchemaGe
     prepare_query(driver: Driver): void
 }
 
+interface EncodedParams {
+  [field: string]: any
+}
+
 abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Result extends SchemaGeneric> implements Statement<Params, Result> {
 
   private get_param_field(field_name: string) {
@@ -73,7 +77,7 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
   protected _stmt: DriverStatement | null = null
   private _driver: Driver | null = null
 
-  protected get driver() {
+  protected get driver(): Driver {
     if (this._driver) return this._driver
     else throw new Error('A statement driver cannot be used until init() is called')
   }
@@ -82,7 +86,7 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
     else throw new Error('A statement cannot be used until init() is called')
   }
 
-  protected encode_params = (params: Params | undefined) => {
+  protected encode_params = (params: Params | undefined): EncodedParams => {
     const encoded_params: {[field: string]: any} = {}
     for (const field of Object.values(this.params)) {
       const val = params ? params[field.field_name] : undefined

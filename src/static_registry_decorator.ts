@@ -3,7 +3,7 @@ class StaticRegistry<T, R = T> {
 
   public constructor() {}
 
-  public register() {
+  public register(): (item: T, context: ClassDecoratorContext) => void {
     return (item: T, context: ClassDecoratorContext) => {
       this.update_registry(this.registry, item)
     }

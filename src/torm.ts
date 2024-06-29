@@ -40,7 +40,7 @@ abstract class TormBase<D extends Driver> {
   // Torm::migrations is by default statically defined on Torm. That means multiple classes end up sharing the same state
   // setting it on your class like this solves that, but its not intuitive.
   // a decent solution here is to make this undefined by default. So migrations become an explicit thing you set up and manage
-  static migrations = new MigrationRegistry()
+  static migrations: MigrationRegistry = new MigrationRegistry()
 
   protected model<T extends ModelClass>(model_class: T): InstanceType<T> {
     const model = new model_class(this)
@@ -49,13 +49,13 @@ abstract class TormBase<D extends Driver> {
     return model as InstanceType<T>
   }
 
-  public get driver() {
+  public get driver(): D {
     // if (this.status !== 'initialized') throw new Error(`Cannot access driver. Torm is ${this.status}`)
     if (this._driver) return this._driver
     throw new Error(`Unexpected state. Torm has status '${this.status}', but driver is not initialized.`)
   }
 
-  public get migrations() {
+  public get migrations(): MigrationsManager {
     if (this.migrations_manager) return this.migrations_manager
     throw new Error(`MigrationsManager cannot be directly accessed until torm is initialized`)
   }

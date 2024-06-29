@@ -58,7 +58,7 @@ abstract class ModelBase implements ModelInstance {
     }
   }
 
-  public get driver() {
+  public get driver(): Driver {
     if (!this.torm) throw new Error('internal error: torm was not instantiated on the model')
     return this.torm.driver
   }
@@ -127,10 +127,10 @@ abstract class ModelBase implements ModelInstance {
     }
   }
 
-  protected build_param_sql(schema_field: BuiltSchemaField<string, any>) {
+  protected build_param_sql(schema_field: BuiltSchemaField<string, any>): string {
     return `:${schema_field.field_name}`
   }
-  protected build_result_sql(schema_field: ResultField<any>) {
+  protected build_result_sql(schema_field: ResultField<any>): string {
     const table_name = schema_field.table_name ? `${schema_field.table_name}.` : ''
     if (schema_field.alias_of) {
       return `${table_name}${schema_field.alias_of} AS '${schema_field.field_name}'`
@@ -138,7 +138,7 @@ abstract class ModelBase implements ModelInstance {
       return `${table_name}${schema_field.field_name}`
     }
   }
-  protected build_column_sql(schema_field: BuiltSchemaField<string, any> | RawSqlInterpolationValues, params_fields: SchemaGeneric, result_fields: SchemaGeneric) {
+  protected build_column_sql(schema_field: BuiltSchemaField<string, any> | RawSqlInterpolationValues, params_fields: SchemaGeneric, result_fields: SchemaGeneric): string {
     if (schema_field instanceof ParamsField) {
       params_fields[schema_field.field_name] = schema_field
       return this.build_param_sql(schema_field)
@@ -157,7 +157,7 @@ abstract class ModelBase implements ModelInstance {
     }
   }
 
-  protected build_column_array_sql(columns_sql: string[]) {
+  protected build_column_array_sql(columns_sql: string[]): string {
     return columns_sql.join(', ')
   }
 }

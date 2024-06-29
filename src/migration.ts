@@ -99,11 +99,11 @@ class MigrationsManager {
     this.#application_version = application_version
   }
 
-  public application_version() {
+  public application_version(): Version {
     return this.#application_version
   }
 
-  public is_database_outdated() {
+  public is_database_outdated(): boolean {
     if (this.#application_version === undefined) return false
     else {
       const current_version = this.#torm.schemas.version()
@@ -111,7 +111,7 @@ class MigrationsManager {
     }
   }
 
-  public is_database_initialized() {
+  public is_database_initialized(): boolean {
     return this.torm.schemas.table('__torm_metadata__') === undefined
   }
 

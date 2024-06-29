@@ -73,6 +73,6 @@ function schema<T extends SchemaInputGeneric>(table_name: string, schema: T): Sc
   }
 }
 
-export const Vars = <T extends SchemaInputGeneric>(schema_input: T) => schema('', schema_input)
+export const Vars = <T extends SchemaInputGeneric>(schema_input: T): SchemaOutput<T> => schema('', schema_input)
 
 export { schema }

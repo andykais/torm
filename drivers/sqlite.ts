@@ -18,10 +18,10 @@ class Statement<
     if (row) return this.decode_result(row)
   }
 
-  public all = (...[params]: OptionalOnEmpty<Params>) => this.stmt.all(this.encode_params(params)).map(this.decode_result)
+  public all = (...[params]: OptionalOnEmpty<Params>): Result[] => this.stmt.all(this.encode_params(params)).map(this.decode_result)
 
 
-  public exec = (...[params]: OptionalOnEmpty<Params>) => {
+  public exec = (...[params]: OptionalOnEmpty<Params>): {changes: number; last_insert_row_id: number} => {
     const changes = this.stmt.run(this.encode_params(params))
     return {
       changes,
@@ -29,9 +29,9 @@ class Statement<
     }
   }
 
-  protected prepare = (sql: string) => this.driver.prepare(sql)
+  protected prepare = (sql: string): sqlite3.Statement => this.driver.prepare(sql)
 
-  static create = <Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, result: Result) => {
+  static create = <Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, result: Result): Statement<Params, Result> => {
     return new Statement<Params, Result>(sql, params, result)
   }
 }
@@ -73,6 +73,10 @@ class InitializeTormMetadata extends Migration {
   }
 }
 
+interface SchemaTable {
+  table_name: string
+  table_schema: string
+}
 class SchemasModelImpl extends Model('__torm_metadata__', {
   version: field.string(),
   updated_at: field.datetime(),
@@ -90,17 +94,17 @@ class SchemasModelImpl extends Model('__torm_metadata__', {
     this.prepare`UPDATE __torm_metadata__ SET version = ${SchemasModelImpl.params.version}`.exec({ version })
   }
 
-  version() {
+  version(): string {
     return this.prepare`SELECT ${SchemasModelImpl.result.version} FROM __torm_metadata__`.one({})!.version
   }
 
-  table(table_name: string) {
+  table(table_name: string): SchemaTable | undefined {
     return this.tables().find(t => t.table_name === table_name)
     // const table_row = this._tables.one({})
     // if (table_row) return this.parse_table_sql(table_row)
   }
 
-  tables() {
+  tables(): SchemaTable[] {
     const tables = this._tables.all({})
       .filter(row => row.sql !== null) // skip the builtin auto definitions
       .map(this.parse_table_sql)

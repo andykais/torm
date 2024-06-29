@@ -26,12 +26,14 @@ export type FieldOutput<F extends FieldDefinition<any, any>> =
       : FieldInput<F>
     : never
 
+type ZodFn<Input, Output> = (input: Input) => Output
+
 abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements FieldDefinition<In, Out> {
-  optional() {
+  optional(): OptionalField<In, Out> {
     return new OptionalField<In, Out>(this)
   }
 
-  default(val: In) {
+  default(val: In): DefaultField<In, Out> {
     return new DefaultField<In, Out>(this, val)
   }
 
@@ -92,29 +94,33 @@ class IdentityFieldDefinition<T extends ColumnValue> extends FieldDefinitionBase
 class StringFieldDefinition extends IdentityFieldDefinition<string> {}
 class NumberFieldDefinition extends IdentityFieldDefinition<number> {}
 class BooleanFieldDefinition extends FieldDefinitionBase<boolean, number> {
-  encode = z.boolean().transform(val => val ? 1 : 0).parse
-  decode = z.number().transform(val => Boolean(val)).parse
+  encode: ZodFn<boolean, number> = z.boolean().transform(val => val ? 1 : 0).parse
+  decode: ZodFn<number, boolean> = z.number().transform(val => Boolean(val)).parse
 }
 
-const z_literal = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-type Literal = z.infer<typeof z_literal>;
+
 type Json = Literal | { [key: string]: Json } | Json[];
-const z_json: z.ZodType<Json> = z.lazy(() =>
-  z.union([z_literal, z.array(z_json), z.record(z_json)])
-)
+type Literal = string | boolean | number | null
+const z_json: z.ZodType<Json> = (() => {
+  const z_literal = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+  return z.lazy(() =>
+    z.union([z_literal, z.array(z_json), z.record(z_json)])
+  )
+})();
+
 class JsonFieldDefinition<T extends Json> extends FieldDefinitionBase<T, string> {
-  encode = z_json.transform(val => JSON.stringify(val)).parse
-  decode = z.string().transform(val => JSON.parse(val)).parse
+  encode: ZodFn<T, string> = z_json.transform(val => JSON.stringify(val)).parse
+  decode: ZodFn<string, T> = z.string().transform(val => JSON.parse(val)).parse
 }
 
 class DateTimeFieldDefinition extends FieldDefinitionBase<Date, string> {
-  encode = z.date().transform(val => val.toString()).parse
-  decode = z.string().transform(val => new Date(val)).parse
+  encode: ZodFn<Date, string> = z.date().transform(val => val.toString()).parse
+  decode: ZodFn<string, Date> = z.string().transform(val => new Date(val)).parse
 }
 
 // field definitions
-export const string   = () => new StringFieldDefinition()
-export const number   = () => new NumberFieldDefinition()
-export const boolean  = () => new BooleanFieldDefinition()
-export const datetime = () => new DateTimeFieldDefinition()
-export const json     = () => new JsonFieldDefinition()
+export const string   = (): StringFieldDefinition => new StringFieldDefinition()
+export const number   = (): NumberFieldDefinition => new NumberFieldDefinition()
+export const boolean  = (): BooleanFieldDefinition => new BooleanFieldDefinition()
+export const datetime = (): DateTimeFieldDefinition => new DateTimeFieldDefinition()
+export const json     = <T extends Json>(): JsonFieldDefinition<T> => new JsonFieldDefinition()
