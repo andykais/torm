@@ -8,8 +8,13 @@ class Author extends Model('author', {
   last_name:  field.string(),
   birthday:   field.datetime().optional(),
 }) {
-  create = this.query`INSERT INTO author (first_name, last_name, birthday) VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`.exec
-  get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
+  queries = {
+    create: this.query`INSERT INTO author (first_name, last_name, birthday)
+                       VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`.exec,
+
+    get:    this.query`SELECT ${Author.result['*']} FROM author
+                       WHERE id = ${Author.params.id}`.one,
+  }
 }
 
 
@@ -20,24 +25,28 @@ class Book extends Model('book', {
   data:       field.json(),
   language:   field.string().default('english'),
 }) {
-  create = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec
-  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
+  queries = {
+    create:           this.query`
+                        INSERT INTO book (title, author_id, language, data)
+                        VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec,
 
-  list_with_author = this.query`
-    SELECT ${[Book.result.title, Author.result.first_name, Author.result.last_name]} FROM book
-    INNER JOIN author ON author_id = Author.id`.all
+    get:              this.query`
+                        SELECT ${Book.result['*']} FROM book
+                        WHERE id = ${Book.params.id}`.one,
+
+    list_with_author: this.query`
+                        SELECT ${[Book.result.title, Author.result.first_name, Author.result.last_name]} FROM book
+                        INNER JOIN author ON author_id = Author.id`.all,
+  }
+
 }
 
 
 class BookORM extends Torm {
-  models = this.models({
-    Author,
-    Book,
-  })
-
-  // models
-  author = this.model(Author)
-  book   = this.model(Book)
+  models = {
+    Author: this.model(Author),
+    Book: this.model(Book),
+  }
 }
 
 
@@ -79,10 +88,10 @@ test('usage', async (ctx) => {
   const db = new BookORM(ctx.create_fixture_path('usage.db'))
   await db.init()
 
-  const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })
-  const hobbit_insert = db.book.create({ title: 'The Hobbit', author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
+  const tolkien_insert = db.models.Author.queries.create({ first_name: 'JR', last_name: 'Tolkein' })
+  const hobbit_insert = db.models.Book.queries.create({ title: 'The Hobbit', author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
 
-  const book_row = db.book.get({ id: hobbit_insert.last_insert_row_id })
+  const book_row = db.models.Book.queries.get({ id: hobbit_insert.last_insert_row_id })
   expect_type<{ id: number; title: string; language: string; author_id: number } | undefined>(book_row)
   assert_equals({
     id: hobbit_insert.last_insert_row_id,
@@ -92,13 +101,13 @@ test('usage', async (ctx) => {
     language: 'english',
   }, book_row)
 
-  const books_and_authors = db.book.list_with_author()
+  const books_and_authors = db.models.Book.queries.list_with_author()
   assert_equals(books_and_authors.length, 1)
   assert_equals(books_and_authors[0]['title'], 'The Hobbit')
   assert_equals(books_and_authors[0]['first_name'], 'JR')
   assert_equals(books_and_authors[0]['last_name'], 'Tolkein')
 
-  const author_row = db.author.get({ id: tolkien_insert.last_insert_row_id })
+  const author_row = db.models.Author.queries.get({ id: tolkien_insert.last_insert_row_id })
   expect_type<{ id: number; first_name: string | null; last_name: string } | undefined>(author_row)
   assert_equals('Tolkein', author_row!.last_name)
 
