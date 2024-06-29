@@ -5,7 +5,7 @@ A typesafe database ORM that exposes the full power of handwritten sql statement
 
 ## Getting Started
 ```ts
-import { Torm, Model, field } from 'https://deno.land/x/torm/drivers/sqlite.ts'
+import { Torm, Model, field } from 'jsr:@andykais/torm/sqlite'
 
 
 class Book extends Model('book', {
@@ -14,8 +14,9 @@ class Book extends Model('book', {
   language:     field.string().default('english'),
   published_at: field.datetime().optional(),
 }) {
-  create = this.query`INSERT INTO book (title, language, published_at) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at]})`.exec
-  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
+  create = this.query.exec`INSERT INTO book (title, language, published_at) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at]})`
+  get = this.query.one`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
+  list = this.query.many`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
 }
 
 
@@ -36,13 +37,13 @@ console.log(row?.title, 'written in', row?.language, 'published on', row?.publis
 ## Migrations
 Torm includes a full migration system, which can be declared like so:
 ```ts
-import { Torm, Model, Migration, field } from 'https://deno.land/x/torm/drivers/sqlite.ts'
+import { Torm, Model, Migration, SeedMigration, field } from 'jsr:@andykais/torm/sqlite'
 
 class Author extends Model('author', {
   id:           field.number(),
   name:         field.string(),
 }) {
-  create = this.query`INSERT INTO author (name) VALUES (${Author.params.name})`.exec
+  create = this.query.exec`INSERT INTO author (name) VALUES (${Author.params.name})`
 }
 
 class Book extends Model('book', {
@@ -52,43 +53,45 @@ class Book extends Model('book', {
   published_at: field.datetime().optional(),
   author_id:    field.number().optional(),
 }) {
-  create = this.query`INSERT INTO book (title, language, published_at, author_id) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at, Book.params.author_id]})`.exec
-  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
-  set_author = this.query`UPDATE book SET author_id = ${Book.params.author_id} WHERE title = ${Book.params.title}`.exec
+  create = this.query.exec`INSERT INTO book (title, language, published_at, author_id) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at, Book.params.author_id]})`
+  get = this.query.one`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
+  set_author = this.query.exec`UPDATE book SET author_id = ${Book.params.author_id} WHERE title = ${Book.params.title}`
 }
 
-const InitializationMigration = Migration.create('1.1.0', `
-  CREATE TABLE author (
-    id INTEGER NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL
-  );
-
-  CREATE TABLE book (
-    id INTEGER NOT NULL PRIMARY KEY,
-    title TEXT NOT NULL,
-    data TEXT,
-    language TEXT NOT NULL,
-    published_at TEXT,
-    author_id INTEGER,
-    FOREIGN KEY(author_id) REFERENCES author(id)
-  )`)
-
-// later on, we may add a author table
-const AddAuthorIdColumnMigration = Migration.create('1.1.0', db => db.exec('ALTER TABLE book ADD COLUMN author_id TEXT REFERENCES author_id(id)'))
-
 class BookORM extends Torm {
-  static migrations = {
-    version: '1.1.0',
-    // an initialization migration is ran on init(), the first time the database is created
-    initialization: InitializationMigration,
-    // upgrades are ran when the connected database has an outdated version number
-    // upgrades run in order of their semver versions.
-    // The latest upgrade version _must_ match the version defined above
-    upgrades: [AddAuthorIdColumnMigration],
-  }
-
   book = this.model(Book)
   author = this.model(Author)
+}
+
+@BookORM.migrations.register()
+class InitializationMigration extends SeedMigration {
+  version = '1.1.0'
+  
+  call() {
+    this.driver.exec(`
+      CREATE TABLE author (
+        id INTEGER NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL
+      );
+  
+      CREATE TABLE book (
+        id INTEGER NOT NULL PRIMARY KEY,
+        title TEXT NOT NULL,
+        data TEXT,
+        language TEXT NOT NULL,
+        published_at TEXT,
+        author_id INTEGER,
+        FOREIGN KEY(author_id) REFERENCES author(id)
+      )`
+    )
+  }
+}
+// later on, we may add a author table
+class AddAuthorIdColumnMigration extends Migration {
+    version = '1.1.0'
+    call() {
+        this.db.exec('ALTER TABLE book ADD COLUMN author_id TEXT REFERENCES author_id(id)')
+    }
 }
 
 const db = new BookORM('books.db')
