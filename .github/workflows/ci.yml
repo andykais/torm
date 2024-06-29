@@ -63,9 +63,12 @@ jobs:
         with:
           deno-version: v1.x
 
-      - run: ls -l
-
-      - run: git status
+      - name: Cache Deno dependencies 
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ hashFiles('deno.lock') }}
+      
       - name: Publish package
         if: github.ref == 'refs/heads/main'
         run: deno publish --allow-slow-types
