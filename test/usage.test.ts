@@ -30,11 +30,6 @@ class Book extends Model('book', {
 
 
 class BookORM extends Torm {
-  models = this.models({
-    Author,
-    Book,
-  })
-
   // models
   author = this.model(Author)
   book   = this.model(Book)
