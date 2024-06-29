@@ -1,6 +1,6 @@
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge, OptionalKeys } from './util.ts'
-import { SqlTemplateArg, ParamsField, ResultField } from './query.ts'
+import type { SqlTemplateArg, ParamsField, ResultField } from './query.ts'
 import type { Driver, OptionalOnEmpty } from './util.ts'
 import type { FieldInput, FieldOutput } from './field.ts'
 import { z } from './deps.ts'

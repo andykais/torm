@@ -1,4 +1,4 @@
-import { test, assert_equals, assert_rejects, assert_throws } from './util.ts'
+import { test, assert_equals, assert_throws } from './util.ts'
 import { Model, Torm, Migration, SeedMigration, MigrationValidationError, field } from '../drivers/sqlite.ts'
 import { MigrationRegistry } from '../src/migration.ts';
 
@@ -11,7 +11,7 @@ class Book extends Model('book', {
 }
 
 
-test('upgrade migration versions must not exceed the seed migration version', async (ctx) => {
+test('upgrade migration versions must not exceed the seed migration version', (ctx) => {
 
   class BookORM extends Torm {
     static migrations = new MigrationRegistry()

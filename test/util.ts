@@ -1,8 +1,6 @@
 export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "https://deno.land/std@0.155.0/testing/asserts.ts";
 export { expectType as expect_type } from "npm:ts-expect"
 import * as colors from 'jsr:@std/fmt@0.225.4/colors'
-import * as path from 'jsr:@std/path@0.225.2'
-import deno_jsonc from '../deno.json' with { type: 'json' }
 
 const resources = {
   books_db_1_0_0: 'test/resources/migrations_1.0.0.db',
