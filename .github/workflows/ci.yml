@@ -63,6 +63,9 @@ jobs:
         with:
           deno-version: v1.x
 
+      - run: ls -l
+
+      - run: git status
       - name: Publish package
         if: github.ref == 'refs/heads/main'
         run: deno publish --allow-slow-types
