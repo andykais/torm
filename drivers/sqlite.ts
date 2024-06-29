@@ -1,3 +1,39 @@
+/**
+ * @module
+ *
+ * This module contains the torm interface for sqlite databases
+ *
+ * @example
+ * ```ts
+ * import { Torm, Model, field } from 'jsr:@andykais/torm/sqlite'
+ * 
+ * 
+ * class Book extends Model('book', {
+ *   id:           field.number(),
+ *   title:        field.string(),
+ *   language:     field.string().default('english'),
+ *   published_at: field.datetime().optional(),
+ * }) {
+ *   create = this.query.exec`INSERT INTO book (title, language, published_at) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at]})`
+ *   get = this.query.one`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
+ *   list = this.query.many`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
+ * }
+ * 
+ * 
+ * class BookORM extends Torm {
+ *   book = this.model(Book)
+ * }
+ * 
+ * const db = new BookORM('books.db')
+ * await db.init()
+ * const info = db.book.create({ title: 'The Hobbit', published_at: new Date('September 21, 1937') })
+ * const row = db.book.get({ id: info.last_insert_row_id })
+ * 
+ * console.log(row?.title, 'written in', row?.language, 'published on', row?.published_at)
+ * // "The Hobbit written in english published on 1937-09-21T04:00:00.000Z"
+ * ```
+ */
+
 import * as sqlite3 from 'jsr:@db/sqlite@0.11'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, type SchemaGeneric } from '../src/schema.ts'
