@@ -1,4 +1,4 @@
-import * as sqlite3 from 'https://deno.land/x/sqlite3@0.9.1/mod.ts'
+import * as sqlite3 from 'jsr:@db/sqlite@0.11'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'

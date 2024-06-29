@@ -1,2 +1,2 @@
-export * as z from 'https://deno.land/x/zod@v3.18.0/mod.ts'
-export * as semver from "https://deno.land/std@0.161.0/semver/mod.ts";
+export * as z from 'npm:zod@3.18.0'
+export * as semver from "jsr:@std/semver@0.200.0";
