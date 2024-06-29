@@ -72,6 +72,3 @@ jobs:
       - name: Publish package
         if: github.ref == 'refs/heads/main'
         run: deno publish --allow-slow-types
-
-      - if: always()
-        run: 'echo __LS__ && ls -l && echo __GIT_STATUS__ && git status && echo __GIT_DIFF__ && git diff'
