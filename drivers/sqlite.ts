@@ -42,6 +42,7 @@ import { StatementBase, type RawRowData } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
 import { MigrationBase, SeedMigrationBase, type MigrationClass } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
+import * as errors from '../src/errors.ts'
 
 
 class Statement<
@@ -50,19 +51,40 @@ class Statement<
   > extends StatementBase<sqlite3.Statement, Params, Result> {
 
   public one = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
-    const row = this.stmt.get<RawRowData>(this.encode_params(params))
-    if (row) return this.decode_result(row)
+    try {
+      const row = this.stmt.get<RawRowData>(this.encode_params(params))
+      if (row) return this.decode_result(row)
+    } catch(e) {
+      throw this.parse_exception(params, e)
+    }
   }
 
-  public all = (...[params]: OptionalOnEmpty<Params>): Result[] => this.stmt.all(this.encode_params(params)).map(this.decode_result)
+  public all = (...[params]: OptionalOnEmpty<Params>): Result[] => {
+    try {
+      return this.stmt.all(this.encode_params(params)).map(this.decode_result)
+    } catch (e) {
+      throw this.parse_exception(params, e)
+    }
+  }
 
 
   public exec = (...[params]: OptionalOnEmpty<Params>): {changes: number; last_insert_row_id: number} => {
-    const changes = this.stmt.run(this.encode_params(params))
-    return {
-      changes,
-      last_insert_row_id: this.driver.lastInsertRowId
+    try {
+      const changes = this.stmt.run(this.encode_params(params))
+      return {
+        changes,
+        last_insert_row_id: this.driver.lastInsertRowId
+      }
+    } catch (e) {
+      throw this.parse_exception(params, e)
     }
+  }
+
+  private parse_exception(params: any, error: Error) {
+    if (error.message.includes('UNIQUE constraint failed')) {
+      return new errors.UniqueConstraintError(this.sql, params, error.message)
+    }
+    return new errors.QueryError(this.sql, params, error.message)
   }
 
   protected prepare = (sql: string): sqlite3.Statement => this.driver.prepare(sql)
@@ -224,6 +246,8 @@ export {
   Migration,
   SeedMigration,
 }
+
+export * as errors from '../src/errors.ts'
 
 type Database = sqlite3.Database
 export type { Database as Driver }

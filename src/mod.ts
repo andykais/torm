@@ -7,4 +7,6 @@
 export { schema } from './schema.ts'
 export * as field from '../src/field.ts'
 
+export * as errors from '../src/errors.ts'
+
 export { MigrationRegistry } from './migration.ts'

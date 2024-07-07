@@ -16,6 +16,12 @@ export type SqlTemplateArg =
   | RawSqlInterpolationValues
 
 
+type AliasParamsField<T extends SchemaField, Alias extends string> = ParamsField<{
+ table_name: T['table_name']
+ field_name: Alias
+ data_transformers: T['data_transformers'] 
+}>
+
 type AliasResultField<T extends SchemaField, Alias extends string> = ResultField<{
  table_name: T['table_name']
  field_name: Alias
@@ -39,6 +45,7 @@ export class Field<T extends SchemaField> implements SchemaField {
 export class ParamsField<T extends SchemaField> extends Field<T> {
   type = 'params' as const
 }
+
 export class ResultField<T extends SchemaField> extends Field<T> {
   type = 'result' as const
 
