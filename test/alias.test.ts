@@ -20,6 +20,10 @@ class Tag extends Model('tag', {
     INNER JOIN tag_group ON tag_group_id = tag_group.id
     WHERE tag.name LIKE ${Tag.params.name} || '%'`.all
 
+  select_by__name__group = this.query`SELECT ${Tag.result['*']} FROM tag
+    INNER JOIN tag_group ON tag_group_id = tag_group.id
+    WHERE tag.name = ${Tag.params.name} AND tag_group.name = ${TagGroup.params.name.as('group')}`
+
   expose_prepare = this.prepare
 }
 
@@ -70,6 +74,13 @@ test('field alias names', async (ctx) => {
   const hardcoded_query = stmt.one()
   expect_type<{ id: number; name: string; tag_group_id: number } | undefined>(hardcoded_query)
   assert_equals(hardcoded_query, { id: picasso_tag_id, name: 'picasso', tag_group_id: artist_tag_group_id })
+
+  // test params aliases
+  assert_equals({
+    id: 1,
+    tag_group_id: 1,
+    name: 'picasso',
+  }, db.tag.select_by__name__group.one({group: 'artist', name: 'picasso'}))
 
   db.close()
 })

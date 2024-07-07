@@ -33,7 +33,7 @@ export class Field<T extends SchemaField> implements SchemaField {
   field_name: T['field_name']
   data_transformers: T['data_transformers']
 
-  public constructor(public schema_field: T) {
+  public constructor(public schema_field: T, public alias_of?: string) {
     this.table_name = schema_field.table_name
     this.field_name = schema_field.field_name
     this.data_transformers = schema_field.data_transformers
@@ -44,17 +44,20 @@ export class Field<T extends SchemaField> implements SchemaField {
 // so it cant tell the difference between ParamsField and ResultField if there are no different properties
 export class ParamsField<T extends SchemaField> extends Field<T> {
   type = 'params' as const
+
+
+  public as<A extends string>(alias: A): AliasParamsField<T, A> {
+    return new ParamsField({
+      table_name: this.table_name,
+      field_name: alias,
+      data_transformers: this.data_transformers,
+    }, this.field_name)
+  }
 }
 
 export class ResultField<T extends SchemaField> extends Field<T> {
   type = 'result' as const
 
-  alias_of: string | undefined
-
-  public constructor(schema_field: T, alias_of?: string) {
-    super(schema_field)
-    this.alias_of = alias_of
-  }
 
   public as<A extends string>(alias: A): AliasResultField<T, A> {
     return new ResultField({
