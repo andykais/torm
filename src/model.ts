@@ -129,7 +129,6 @@ abstract class ModelBase implements ModelInstance {
 
   protected build_param_sql(schema_field: ParamsField<any>): string {
     if (schema_field.alias_of) {
-      console.debug(schema_field.alias_of)
       return `:${schema_field.field_name}`
     } else {
       return `:${schema_field.field_name}`

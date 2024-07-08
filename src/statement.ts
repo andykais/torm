@@ -48,6 +48,8 @@ interface ExecInfo {
 }
 
 export interface Statement<Params extends SchemaGeneric, Result extends SchemaGeneric> {
+    sql: string
+
     one: (...[params]: OptionalOnEmpty<Params>) => Result | undefined
     all: (...[params]: OptionalOnEmpty<Params>) => Result[]
     exec: (...[params]: OptionalOnEmpty<Params>) => ExecInfo

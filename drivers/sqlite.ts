@@ -254,3 +254,4 @@ export type { Database as Driver }
 export { field }
 export { Vars }
 export { MigrationError, MigrationValidationError } from '../src/migration.ts'
+export type { SchemaGeneric as Fields }
