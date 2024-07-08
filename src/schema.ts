@@ -3,11 +3,13 @@ import { ParamsField, ResultField } from './query.ts'
 import type { FieldDefinition } from './field.ts'
 
 export type SchemaInputGeneric = Record<string, FieldDefinition<any, any>>
+
 export type SchemaField = {
   table_name: string
   field_name: string
   data_transformers: FieldDefinition<any, any>
 }
+
 export type SchemaFieldGeneric = ParamsField<SchemaField> | ResultField<SchemaField>
 
 export type SchemaGeneric = {
@@ -42,6 +44,19 @@ export type SchemaResult<T extends SchemaInputGeneric> =
   }
 
 
+export type InferTypes<T extends SchemaInputGeneric> = {
+  result: {
+    [K in Extract<keyof T, string>]: T[K] extends FieldDefinition<infer In, any>
+      ? In
+      : never
+  }
+  params: {
+    [K in Extract<keyof T, string>]: T[K] extends FieldDefinition<any, infer Out>
+      ? Out
+      : never
+  }
+}
+
 export interface SchemaOutput<T extends SchemaInputGeneric> {
   params: SchemaParams<T>
   result: SchemaResult<T>
@@ -68,6 +83,7 @@ function schema<T extends SchemaInputGeneric>(table_name: string, schema: T): Sc
   ;(built_result_schema['*'] as any) = Object.values(built_result_schema)
 
   return {
+    schema,
     params: built_params_schema as SchemaParams<T>,
     result: built_result_schema as SchemaResult<T>,
   }

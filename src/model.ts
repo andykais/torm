@@ -1,7 +1,7 @@
 import { ParamsField, ResultField } from './query.ts'
 import { schema } from './schema.ts'
 import type { Driver, Constructor } from './util.ts'
-import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric } from './schema.ts'
+import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, InferTypes } from './schema.ts'
 import type { Statement, StatementParams, StatementResult } from './statement.ts'
 import type { SqlTemplateArg, RawSqlInterpolationValues } from './query.ts'
 import type { MigrationClass } from './migration.ts'
@@ -16,6 +16,7 @@ interface ModelClass {
   // new (torm: TormBase<Driver>, options: ModelOptions): ModelBase
   new (torm: TormBase<Driver>): ModelBase
 }
+
 interface ModelInstance {
   prepare_queries: (driver?: Driver) => void
 }
@@ -171,7 +172,7 @@ const WithStaticSchema =
   <Class extends Constructor>(base: Class) =>
     <T extends SchemaInputGeneric>(table_name: string, schema_input: T) => {
       return class IncludingStaticSchema extends base {
-        static schema = schema(table_name, schema_input)
+        static schema_types: InferTypes<T>
         static params = IncludingStaticSchema.schema.params
         static result = IncludingStaticSchema.schema.result
       }
