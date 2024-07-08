@@ -58,6 +58,7 @@ export type InferTypes<T extends SchemaInputGeneric> = {
 }
 
 export interface SchemaOutput<T extends SchemaInputGeneric> {
+  schema: T
   params: SchemaParams<T>
   result: SchemaResult<T>
 }
