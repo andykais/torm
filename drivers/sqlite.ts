@@ -36,7 +36,7 @@
 
 import * as sqlite3 from 'jsr:@db/sqlite@0.11'
 import type { OptionalOnEmpty } from '../src/util.ts'
-import { Vars, type SchemaGeneric } from '../src/schema.ts'
+import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
@@ -253,5 +253,6 @@ type Database = sqlite3.Database
 export type { Database as Driver }
 export { field }
 export { Vars }
+export { schema }
 export { MigrationError, MigrationValidationError } from '../src/migration.ts'
 export type { SchemaGeneric as Fields }
