@@ -44,6 +44,13 @@ export type SchemaResult<T extends SchemaInputGeneric> =
   }
 
 
+export type InferSchemaTypes<T> =
+  T extends SchemaParams<infer S>
+    ? InferTypes<S>['params']
+    : T extends SchemaResult<infer S>
+      ? InferTypes<S>['result']
+      : never
+
 export type InferTypes<T extends SchemaInputGeneric> = {
   result: {
     [K in Extract<keyof T, string>]: T[K] extends FieldDefinition<infer In, any>

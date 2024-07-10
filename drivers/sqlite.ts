@@ -98,6 +98,7 @@ class Statement<
 abstract class DriverModel extends ModelBase {
   protected create_stmt = Statement.create
 }
+
 class TempModelNonAbstract extends DriverModel {}
 const Model = WithStaticSchema(TempModelNonAbstract)
 
@@ -243,6 +244,7 @@ export {
   Torm,
   Statement,
   Model,
+  DriverModel,
   Migration,
   SeedMigration,
 }
@@ -255,4 +257,5 @@ export { field }
 export { Vars }
 export { schema }
 export { MigrationError, MigrationValidationError } from '../src/migration.ts'
+export type { InferSchemaTypes } from '../src/schema.ts'
 export type { SchemaGeneric as Fields }
