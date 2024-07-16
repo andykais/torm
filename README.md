@@ -1,5 +1,5 @@
 # TORM
-[![JSR](https://jsr.io/badges/@andykais/torm)](https://jsr.io/@andykais/torm)
+[![JSR](https://jsr.io/badges/@torm/sqlite)](https://jsr.io/@torm/sqlite)
 [![Checks](https://github.com/andykais/torm/actions/workflows/ci.yml/badge.svg)](https://github.com/andykais/torm/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/andykais/torm)](https://github.com/andykais/torm/blob/master/LICENSE)
 
