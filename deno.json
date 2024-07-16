@@ -1,6 +1,6 @@
 {
   "name": "@andykais/torm",
-  "version": "1.3.2",
+  "version": "1.4.0",
 
   "tasks": {
     "test":       "deno test --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --import-map=test/import_map.json test",
