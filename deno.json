@@ -1,5 +1,5 @@
 {
-  "name": "@andykais/torm",
+  "name": "@torm/sqlite",
   "version": "1.4.0",
 
   "tasks": {
@@ -14,7 +14,7 @@
   },
 
   "exports": {
-    ".": "./src/mod.ts",
-    "./drivers/sqlite": "./drivers/sqlite.ts",
+    ".": "./drivers/sqlite.ts",
+    "./": "./src/",
   }
 }
