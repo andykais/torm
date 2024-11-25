@@ -141,6 +141,7 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
     try {
       this._stmt = this.prepare(this.sql)
     } catch (e) {
+      if (e instanceof Error === false) throw e
       throw new Error(`${e.message}
 ${'```'}
 ${this.sql}

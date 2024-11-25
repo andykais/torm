@@ -80,7 +80,8 @@ class Statement<
     }
   }
 
-  private parse_exception(params: any, error: Error) {
+  private parse_exception(params: any, error: unknown) {
+    if (!(error instanceof Error)) return new Error(`unexpected error`, { cause: error })
     if (error.message.includes('UNIQUE constraint failed')) {
       return new errors.UniqueConstraintError(this.sql, params, error.message)
     }
@@ -142,7 +143,7 @@ class SchemasModelImpl extends Model('__torm_metadata__', {
   created_at: field.datetime(),
 }) implements SchemasModel {
 
-  static migrations = {
+  static override migrations = {
     version: '0.1.0',
     initialization: InitializeTormMetadata
   }

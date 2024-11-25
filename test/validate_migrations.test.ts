@@ -14,7 +14,6 @@ class Book extends Model('book', {
 test('upgrade migration versions must not exceed the seed migration version', (ctx) => {
 
   class BookORM extends Torm {
-    static migrations = new MigrationRegistry()
     book = this.model(Book)
   }
 
@@ -42,7 +41,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
   await Deno.copyFile(ctx.resources.books_db_1_0_0, db_1_0_0)
 
   class BookORM extends Torm {
-    static migrations = new MigrationRegistry()
+    static override migrations = new MigrationRegistry()
     book = this.model(Book)
   }
 
@@ -88,7 +87,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
 test('fresh dbs should not touch upgrade migrations', async (ctx) => {
 
   class BookORM extends Torm {
-    static migrations = new MigrationRegistry()
+    static override migrations = new MigrationRegistry()
     book = this.model(Book)
   }
 

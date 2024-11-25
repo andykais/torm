@@ -15,7 +15,7 @@ interface MigrationRegistry {
 class MigrationRegistry extends StaticRegistry<MigrationClass> {
   #validation_registry: MigrationInstance[] = []
 
-  protected update_registry(registry: MigrationClass[], migration_class: MigrationClass) {
+  protected override update_registry(registry: MigrationClass[], migration_class: MigrationClass) {
     const migration_instance = new migration_class(undefined)
     // TODO add validation
     const updated_registry = [...this.#validation_registry, migration_instance]
@@ -41,7 +41,8 @@ class MigrationRegistry extends StaticRegistry<MigrationClass> {
         if (prev_migration.is_seed_migration()) {
           if (migration.is_seed_migration()) {
             if (!semver.eq(prev_migration.version, migration.version)) {
-              throw new MigrationValidationError(`All seed migrations must keep the same version.`)
+              const seed_migrations = migration_registry.map(m => `${m.constructor.name}: "${m.version}"`).join(',')
+              throw new MigrationValidationError(`All seed migrations must keep the same version. Seed migrations: [${seed_migrations}]`)
             }
           } else {
             if (semver.lt(prev_migration.version, migration.version)) {

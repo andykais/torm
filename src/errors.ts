@@ -2,7 +2,7 @@ import { type StatementBase } from './statement.ts'
 
 
 export class QueryError extends Error {
-  public name = 'QueryError'
+  public override name = 'QueryError'
 
   public sql: string
   public params: any
@@ -14,5 +14,5 @@ export class QueryError extends Error {
 }
 
 export class UniqueConstraintError extends QueryError {
-  public name = 'UniqueConstraintError'
+  public override name = 'UniqueConstraintError'
 }
