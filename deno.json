@@ -17,5 +17,9 @@
 
   "exports": {
     ".": "./drivers/sqlite.ts",
+  },
+  "imports": {
+    "@std/semver": "jsr:@std/semver@^1.0.3",
+    "zod": "npm:zod@^3.23.8"
   }
 }

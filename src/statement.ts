@@ -1,9 +1,9 @@
+import * as z from 'zod'
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge, OptionalKeys } from './util.ts'
 import type { SqlTemplateArg, ParamsField, ResultField } from './query.ts'
 import type { Driver, OptionalOnEmpty } from './util.ts'
 import type { FieldInput, FieldOutput } from './field.ts'
-import { z } from './deps.ts'
 
 type ExtractParamsInputs<T> =
   T extends ParamsField<BuiltSchemaField<infer Name, any>>

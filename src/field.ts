@@ -1,4 +1,4 @@
-import { z } from './deps.ts'
+import * as z from 'zod'
 
 // accepted column values (for sqlite, for now)
 type ColumnValue = string | number | bigint | Uint8Array | null;
