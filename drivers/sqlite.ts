@@ -34,7 +34,7 @@
  * ```
  */
 
-import * as sqlite3 from 'jsr:@db/sqlite@0.11'
+import * as sqlite3 from '@db/sqlite'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'

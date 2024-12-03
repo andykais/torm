@@ -8,7 +8,7 @@ A typesafe database ORM that exposes the full power of handwritten sql statement
 
 ## Getting Started
 ```ts
-import { Torm, Model, field } from 'jsr:@andykais/torm/sqlite'
+import { Torm, Model, field } from 'jsr:@torm/sqlite'
 
 
 class Book extends Model('book', {
@@ -40,7 +40,7 @@ console.log(row?.title, 'written in', row?.language, 'published on', row?.publis
 ## Migrations
 Torm includes a full migration system, which can be declared like so:
 ```ts
-import { Torm, Model, Migration, SeedMigration, field } from 'jsr:@andykais/torm/sqlite'
+import { Torm, Model, Migration, SeedMigration, field } from 'jsr:@torm/sqlite'
 
 class Author extends Model('author', {
   id:           field.number(),
