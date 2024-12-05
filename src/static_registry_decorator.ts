@@ -9,7 +9,8 @@ class StaticRegistry<T, R = T> {
     }
   }
 
-  protected update_registry(registry: R[], new_item: T) {
+  /** @internal */
+  public update_registry(registry: R[], new_item: T) {
     // because T and R can be different types, its best not to assume a default implementation
     throw new Error('unimplemented')
   }

@@ -39,8 +39,8 @@ import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase, WithStaticSchema } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
-import { TormBase, type SchemasModel, type InitOptions } from '../src/torm.ts'
-import { MigrationBase, SeedMigrationBase, type MigrationClass } from '../src/migration.ts'
+import { TormBase, type SchemasModel, type InitOptions, TormOptions } from '../src/torm.ts'
+import { MigrationBase, MigrationRegistry, SeedMigrationBase, type MigrationClass } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
 import * as errors from '../src/errors.ts'
 
@@ -223,13 +223,16 @@ ${columns.join('\n  ')}
 }
 
 class Torm extends TormBase<sqlite3.Database> {
-  public constructor(private db_path: string, private options: sqlite3.DatabaseOpenOptions = {}) {
-    super()
+  public constructor(private db_path: string, private torm_options?: TormOptions, private sqlite_options: sqlite3.DatabaseOpenOptions = {}) {
+    torm_options = torm_options ?? {}
+    torm_options.migrations = torm_options.migrations ?? new MigrationRegistry()
+    torm_options.migrations.update_registry(torm_options.migrations.registry, InitializeTormMetadata)
+    super(torm_options)
   }
 
   // deno-lint-ignore require-await
   public async init(options?: InitOptions) {
-    const driver = new sqlite3.Database(this.db_path, this.options)
+    const driver = new sqlite3.Database(this.db_path, this.sqlite_options)
     // await driver.connect()
     this._init(driver, options)
     this.schemas.version()
@@ -257,6 +260,6 @@ export type { Database as Driver }
 export { field }
 export { Vars }
 export { schema }
-export { MigrationError, MigrationValidationError } from '../src/migration.ts'
+export { MigrationError, MigrationValidationError, MigrationRegistry } from '../src/migration.ts'
 export type { InferSchemaTypes, SchemaFieldGeneric } from '../src/schema.ts'
 export type { SchemaGeneric as Fields }

@@ -15,7 +15,8 @@ interface MigrationRegistry {
 class MigrationRegistry extends StaticRegistry<MigrationClass> {
   #validation_registry: MigrationInstance[] = []
 
-  protected override update_registry(registry: MigrationClass[], migration_class: MigrationClass) {
+  /** @internal */
+  public override update_registry(registry: MigrationClass[], migration_class: MigrationClass) {
     const migration_instance = new migration_class(undefined)
     // TODO add validation
     const updated_registry = [...this.#validation_registry, migration_instance]
@@ -77,9 +78,8 @@ class MigrationsManager {
   }
   public registry: MigrationClass[]
 
-  public constructor(private torm: TormBase<Driver>) {
-    const thisConstructor = torm.constructor as typeof TormBase<Driver>
-    this.registry = thisConstructor.migrations.registry
+  public constructor(private torm: TormBase<Driver>, migration_registry: MigrationRegistry) {
+    this.registry = migration_registry.registry
 
     let application_version: Version | undefined
     // TODO so this is a problem. We have to instantiate a Migration (Model) class to find out the Migration::version because static properties cannot be accessed within the decorator
@@ -169,7 +169,7 @@ class MigrationsManager {
       const last_migration = this.#migrations.upgrades.at(-1)!
       const last_migration_version = semver.parse(last_migration.version)
       if (!semver.equals(last_migration_version, application_version)) {
-        throw new MigrationValidationError(`The last upgrade migration version must match the current application version`)
+        throw new MigrationValidationError(`The newest upgrade migration version (${last_migration.version}) must match the current application version (${this.#application_version})`)
       }
     }
 

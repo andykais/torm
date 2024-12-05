@@ -1,10 +1,11 @@
 import { test, assert_equals } from './util.ts'
-import { Torm, SeedMigration } from '../drivers/sqlite.ts'
+import { Torm, SeedMigration, MigrationRegistry } from '../drivers/sqlite.ts'
 
 
 class EmptyORM extends Torm {}
 
-@EmptyORM.migrations.register()
+const migrations = new MigrationRegistry
+@migrations.register()
 class EmptyMigration extends SeedMigration {
   version = '1.0.0'
   call() {}
@@ -12,12 +13,12 @@ class EmptyMigration extends SeedMigration {
 
 test('empty torm', async () => {
   await Deno.remove('test/fixtures/empty.db').catch(e => { if (e instanceof Deno.errors.NotFound === false) throw e})
-  const db = new EmptyORM('test/fixtures/empty.db')
+  const db = new EmptyORM('test/fixtures/empty.db', {migrations})
   await db.init()
   assert_equals(db.schemas.version(), '1.0.0')
   db.close()
 
-  const db_reopen = new EmptyORM('test/fixtures/empty.db')
+  const db_reopen = new EmptyORM('test/fixtures/empty.db', {migrations})
   await db_reopen.init()
   assert_equals(db_reopen.schemas.version(), '1.0.0')
   db_reopen.close()

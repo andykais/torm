@@ -1,6 +1,5 @@
 import { test, assert_equals, assert_throws } from './util.ts'
-import { Model, Torm, Migration, SeedMigration, MigrationValidationError, field } from '../drivers/sqlite.ts'
-import { MigrationRegistry } from '../src/migration.ts';
+import { Model, Torm, Migration, MigrationRegistry, SeedMigration, MigrationValidationError, field } from '../drivers/sqlite.ts'
 
 
 class Book extends Model('book', {
@@ -17,7 +16,8 @@ test('upgrade migration versions must not exceed the seed migration version', (c
     book = this.model(Book)
   }
 
-  @BookORM.migrations.register()
+  const migrations = new MigrationRegistry()
+  @migrations.register()
   class InitBookMigration1 extends SeedMigration {
     version = '1.0.0'
 
@@ -28,7 +28,7 @@ test('upgrade migration versions must not exceed the seed migration version', (c
   }
 
   assert_throws(() => {
-    @BookORM.migrations.register()
+    @migrations.register()
     class AccidentalFutureMigration extends Migration {
       version = '1.2.0'
       call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
@@ -40,12 +40,13 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
   const db_1_0_0 = ctx.create_fixture_path('migrations_1.0.0.db')
   await Deno.copyFile(ctx.resources.books_db_1_0_0, db_1_0_0)
 
+  const migrations = new MigrationRegistry()
+
   class BookORM extends Torm {
-    static override migrations = new MigrationRegistry()
     book = this.model(Book)
   }
 
-  @BookORM.migrations.register()
+  @migrations.register()
   class InitBookMigration2 extends SeedMigration {
     version = '1.2.0'
 
@@ -58,18 +59,18 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
     call = () => { throw new Error('do not run the seed migration') }
   }
 
-  @BookORM.migrations.register()
+  @migrations.register()
   class AddGenreMigration extends Migration {
     version = '1.1.0'
     call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
   }
 
   // tihs should fail because we are missing a 1.2.0 upgrade, no database actions have been taken yet
-  const db_old = new BookORM(db_1_0_0)
+  const db_old = new BookORM(db_1_0_0, {migrations})
   assert_throws(() => db_old.migrations.validate(), MigrationValidationError)
 
   // adding in our migration to the latest version will now work
-  @BookORM.migrations.register()
+  @migrations.register()
   class AddPageCountMigration extends Migration {
     version = '1.2.0'
     call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN page_count TEXT`)
@@ -77,7 +78,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
 
   db_old.close()
 
-  const db_old_with_current_migration = new BookORM(db_1_0_0)
+  const db_old_with_current_migration = new BookORM(db_1_0_0, {migrations})
   db_old_with_current_migration.init({auto_migrate: false})
   db_old_with_current_migration.migrations.validate()
   await db_old_with_current_migration.init()
@@ -91,7 +92,9 @@ test('fresh dbs should not touch upgrade migrations', async (ctx) => {
     book = this.model(Book)
   }
 
-  @BookORM.migrations.register()
+  const migrations = new MigrationRegistry()
+
+  @migrations.register()
   class InitBookMigration extends SeedMigration {
     version = '1.2.0'
 
@@ -105,13 +108,13 @@ test('fresh dbs should not touch upgrade migrations', async (ctx) => {
     call = () => this.create_table.exec()
   }
 
-  @BookORM.migrations.register()
+  @migrations.register()
   class AddGenreMigration extends Migration {
     version = '1.2.0'
     call = () => { throw new Error('do not take this codepath') }
   }
 
-  const db = new BookORM(ctx.create_fixture_path('test.db'))
+  const db = new BookORM(ctx.create_fixture_path('test.db'), {migrations})
   await db.init()
   assert_equals([], db.book.list())
 })

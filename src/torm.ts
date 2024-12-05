@@ -12,7 +12,9 @@ interface TableRow {
   table_schema: string
 }
 abstract class SchemasModel extends ModelBase {
+  /** @internal */
   abstract unsafe_version_set(version: string): void
+
   /**
     * Returns the current migration version of the database
     */
@@ -27,6 +29,10 @@ abstract class SchemasModel extends ModelBase {
   abstract tables(): TableRow[]
 }
 
+
+export interface TormOptions {
+  migrations?: MigrationRegistry
+}
 
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
@@ -69,9 +75,10 @@ abstract class TormBase<D extends Driver> {
     this.close_driver()
   }
 
-  public constructor() {
+  public constructor(options: TormOptions) {
     // Torm::init can be called multiple times
-    this.migrations_manager = new MigrationsManager(this)
+    const migration_registry = options.migrations ?? new MigrationRegistry()
+    this.migrations_manager = new MigrationsManager(this, migration_registry)
   }
 
   protected _init(driver: D, options?: InitOptions) {
