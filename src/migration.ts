@@ -160,11 +160,6 @@ class MigrationsManager {
     this.#torm.schemas.unsafe_version_set(next_version.version_str)
   }
 
-  private is_seed_migration(migration: object): boolean {
-    if (migration instanceof SeedMigrationBase) return true
-    else return false
-  }
-
   public validate() {
     if (this.#application_version === undefined) throw new Error('Misconfigured migration: expected a configured application version, found undefined')
 

@@ -1,6 +1,7 @@
-export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "https://deno.land/std@0.155.0/testing/asserts.ts";
-export { expectType as expect_type } from "npm:ts-expect"
-import * as colors from 'jsr:@std/fmt@0.225.4/colors'
+export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "@std/assert";
+import { assertEquals as assert_equals } from '@std/assert'
+export { expectType as expect_type } from "ts-expect"
+import * as colors from '@std/colors'
 
 const resources = {
   books_db_1_0_0: 'test/resources/migrations_1.0.0.db',
@@ -16,6 +17,7 @@ class TestContext {
   get fixture_folder() {
     return `test/fixtures/${this.test_name}`
   }
+
   create_fixture_path(path: string) {
     return `${this.fixture_folder}/${path}`
   }

@@ -3,8 +3,8 @@
   "version": "1.4.1",
 
   "tasks": {
-    "test":       "deno test --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME,DENO_SQLITE_PATH,DENO_SQLITE_LOCAL --allow-net test",
-    "test:watch": "deno test --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME,DENO_SQLITE_PATH,DENO_SQLITE_LOCAL --allow-net --watch"
+    "test":       "deno test --check --import-map=test/import_map.json --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME,DENO_SQLITE_PATH,DENO_SQLITE_LOCAL --allow-net test",
+    "test:watch": "deno test --check --import-map=test/import_map.json --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME,DENO_SQLITE_PATH,DENO_SQLITE_LOCAL --allow-net --watch"
   },
 
   "unstable": ["ffi"],
@@ -16,8 +16,9 @@
   },
 
   "exports": {
-    ".": "./drivers/sqlite.ts",
+    ".": "./drivers/sqlite.ts"
   },
+
   "imports": {
     "@db/sqlite": "jsr:@db/sqlite@0.12.0",
     "@std/semver": "jsr:@std/semver@^1.0.3",
