@@ -1,4 +1,4 @@
-import { test, assert_equals, expect_type, assert_throws } from './util.ts'
+import { test, assert_equals, assert_throws } from './util.ts'
 import { Model, Torm, SeedMigration, field, errors, MigrationRegistry, schema } from '../drivers/sqlite.ts'
 
 

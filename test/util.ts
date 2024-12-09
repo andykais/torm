@@ -1,5 +1,4 @@
 export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "@std/assert";
-import { assertEquals as assert_equals } from '@std/assert'
 export { expectType as expect_type } from "ts-expect"
 import * as colors from '@std/colors'
 

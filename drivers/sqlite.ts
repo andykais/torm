@@ -39,8 +39,8 @@ import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
-import { TormBase, type SchemasModel, type InitOptions, TormOptions } from '../src/torm.ts'
-import { MigrationBase, MigrationRegistry, SeedMigrationBase, type MigrationClass } from '../src/migration.ts'
+import { TormBase, type SchemasModel, type InitOptions, type TormOptions } from '../src/torm.ts'
+import { MigrationBase, MigrationRegistry, SeedMigrationBase } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
 import * as errors from '../src/errors.ts'
 
@@ -141,23 +141,20 @@ interface SchemaTable {
   table_name: string
   table_schema: string
 }
+const torm_metadata_schema = schema('__torm_metadata__', {
+  version: field.string(),
+  updated_at: field.datetime(),
+  created_at: field.datetime(),
+})
 class SchemasModelImpl extends Model implements SchemasModel {
-  static schema = schema('__torm_metadata__', {
-    version: field.string(),
-    updated_at: field.datetime(),
-    created_at: field.datetime(),
-  })
-
-  // migrations = migrations_internal
-
   private _tables = this.query`SELECT ${SqliteMasterModel.schema.result['*']} FROM sqlite_master ORDER BY name`
 
   unsafe_version_set(version: string) {
-    this.prepare`UPDATE __torm_metadata__ SET version = ${SchemasModelImpl.schema.params.version}`.exec({ version })
+    this.prepare`UPDATE __torm_metadata__ SET version = ${torm_metadata_schema.params.version}`.exec({ version })
   }
 
   version(): string {
-    return this.prepare`SELECT ${SchemasModelImpl.schema.result.version} FROM __torm_metadata__`.one({})!.version
+    return this.prepare`SELECT ${torm_metadata_schema.result.version} FROM __torm_metadata__`.one({})!.version
   }
 
   table(table_name: string): SchemaTable | undefined {
@@ -225,8 +222,7 @@ ${columns.join('\n  ')}
 }
 
 class Torm extends TormBase<sqlite3.Database> {
-  public constructor(private db_path: string, private torm_options?: TormOptions, private sqlite_options: sqlite3.DatabaseOpenOptions = {}) {
-    torm_options = torm_options ?? {}
+  public constructor(private db_path: string, torm_options: TormOptions = {}, private sqlite_options: sqlite3.DatabaseOpenOptions = {}) {
     torm_options.migrations = torm_options.migrations ?? new MigrationRegistry()
     super({...torm_options, migrations_internal})
   }

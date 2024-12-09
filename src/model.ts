@@ -1,5 +1,4 @@
 import { ParamsField, ResultField } from './query.ts'
-import { schema } from './schema.ts'
 import type { Driver, Constructor } from './util.ts'
 import type { BuiltSchemaField, SchemaGeneric, SchemaInputGeneric, InferTypes } from './schema.ts'
 import type { Statement, StatementParams, StatementResult } from './statement.ts'
