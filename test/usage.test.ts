@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, SeedMigration, field } from '../drivers/sqlite.ts'
+import { Model, Torm, SeedMigration, field, MigrationRegistry } from '../drivers/sqlite.ts'
 
 
 class Author extends Model('author', {
@@ -36,7 +36,8 @@ class BookORM extends Torm {
 }
 
 
-@BookORM.migrations.register()
+const migrations = new MigrationRegistry()
+@migrations.register()
 class AuthorSeedMigration extends SeedMigration {
   version = '1.0.0'
 
@@ -51,7 +52,7 @@ class AuthorSeedMigration extends SeedMigration {
 }
 
 
-@BookORM.migrations.register()
+@migrations.register()
 class BookSeedMigration extends SeedMigration {
   version = '1.0.0'
 
@@ -71,7 +72,7 @@ class BookSeedMigration extends SeedMigration {
 
 
 test('usage', async (ctx) => {
-  const db = new BookORM(ctx.create_fixture_path('usage.db'))
+  const db = new BookORM(ctx.create_fixture_path('usage.db'), {migrations})
   await db.init()
 
   const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })

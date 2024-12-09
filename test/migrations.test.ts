@@ -1,5 +1,5 @@
 import { test, assert_equals } from './util.ts'
-import { Model, Torm, Migration, SeedMigration, field } from '../drivers/sqlite.ts'
+import { Model, Torm, Migration, SeedMigration, MigrationRegistry, field } from '../drivers/sqlite.ts'
 
 
 class Author extends Model('author', {
@@ -37,7 +37,9 @@ class BookORM extends Torm {
   author = this.model(Author)
 }
 
-@BookORM.migrations.register()
+const migrations = new MigrationRegistry()
+
+@migrations.register()
 class InitMigration extends SeedMigration {
 
   version = '1.2.0'
@@ -59,7 +61,7 @@ class InitMigration extends SeedMigration {
   `)
 }
 
-@BookORM.migrations.register()
+@migrations.register()
 class PublishedAtMigration extends Migration {
   version = '1.2.0'
 
@@ -140,12 +142,12 @@ BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD
 
 
 test('auto migration', async (ctx) => {
-  let db_new = new BookORM(ctx.create_fixture_path('migrations.db'))
+  let db_new = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
 
-  const db_old = new BookORM(ctx.create_fixture_path('migrations_1.0.0.db'))
+  const db_old = new BookORM(ctx.create_fixture_path('migrations_1.0.0.db'), {migrations})
   await db_old.init()
   assert_equals('1.2.0', db_old.schemas.version())
   const tables_old = db_old.schemas.tables()
@@ -156,7 +158,7 @@ test('auto migration', async (ctx) => {
   db_old.close()
 
   // check that we dont run migrations twice
-  db_new = new BookORM(ctx.create_fixture_path('migrations.db'))
+  db_new = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   assert_equals(tables_new, db_new.schemas.tables())
@@ -167,12 +169,12 @@ test('manual migration', async (ctx) => {
   const db_old_path = ctx.create_fixture_path('migrations_1.0.0.db')
   await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
 
-  const db_new = new BookORM('test/fixtures/migrations.db')
+  const db_new = new BookORM('test/fixtures/migrations.db', {migrations})
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
 
-  const db_old = new BookORM(db_old_path)
+  const db_old = new BookORM(db_old_path, {migrations})
   await db_old.init({ auto_migrate: false })
   assert_equals('1.0.0', db_old.schemas.version())
   assert_equals(true, db_old.migrations.is_database_outdated())

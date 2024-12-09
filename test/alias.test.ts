@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, SeedMigration, field } from '../drivers/sqlite.ts'
+import { Model, Torm, SeedMigration, field, MigrationRegistry } from '../drivers/sqlite.ts'
 
 
 class TagGroup extends Model('tag_group', {
@@ -33,7 +33,9 @@ class TagORM extends Torm {
   tag       = this.model(Tag)
 }
 
-@TagORM.migrations.register()
+const migrations = new MigrationRegistry()
+
+@migrations.register()
 class TagInitMigration extends SeedMigration {
   version = '1.0.0'
 
@@ -45,7 +47,7 @@ class TagInitMigration extends SeedMigration {
   `.exec()
 }
 
-@TagORM.migrations.register()
+@migrations.register()
 class TagGroupInitMigration extends SeedMigration {
   version = '1.0.0'
 
@@ -60,7 +62,7 @@ class TagGroupInitMigration extends SeedMigration {
 }
 
 test('field alias names', async (ctx) => {
-  const db = new TagORM(ctx.create_fixture_path('test.db'))
+  const db = new TagORM(ctx.create_fixture_path('test.db'), {migrations})
   await db.init()
 
   const artist_tag_group_id = db.tag_group.create({ name: 'artist' }).last_insert_row_id

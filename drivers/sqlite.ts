@@ -111,11 +111,16 @@ abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
 }
 
+
+const migrations_internal = new MigrationRegistry()
+
 class SqliteMasterModel extends Model('sqlite_master', {
   name: field.string(),
   sql: field.string(),
 }) {}
-class InitializeTormMetadata extends Migration {
+
+@migrations_internal.register()
+class InitializeTormMetadata extends SeedMigration {
   version = '0.1.0'
   call(driver?: sqlite3.Database) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
@@ -143,10 +148,7 @@ class SchemasModelImpl extends Model('__torm_metadata__', {
   created_at: field.datetime(),
 }) implements SchemasModel {
 
-  static override migrations = {
-    version: '0.1.0',
-    initialization: InitializeTormMetadata
-  }
+  // migrations = migrations_internal
 
   private _tables = this.query`SELECT ${SqliteMasterModel.result['*']} FROM sqlite_master ORDER BY name`
 
@@ -226,8 +228,7 @@ class Torm extends TormBase<sqlite3.Database> {
   public constructor(private db_path: string, private torm_options?: TormOptions, private sqlite_options: sqlite3.DatabaseOpenOptions = {}) {
     torm_options = torm_options ?? {}
     torm_options.migrations = torm_options.migrations ?? new MigrationRegistry()
-    torm_options.migrations.update_registry(torm_options.migrations.registry, InitializeTormMetadata)
-    super(torm_options)
+    super({...torm_options, migrations_internal})
   }
 
   // deno-lint-ignore require-await

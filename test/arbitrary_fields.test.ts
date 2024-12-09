@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Vars, Torm, SeedMigration, field } from '../drivers/sqlite.ts'
+import { Model, Vars, Torm, SeedMigration, field, MigrationRegistry } from '../drivers/sqlite.ts'
 
 
 const vars = Vars({
@@ -25,7 +25,8 @@ class BookORM extends Torm {
   book = this.model(Book)
 }
 
-@BookORM.migrations.register()
+const migrations = new MigrationRegistry()
+@migrations.register()
 class BookMigration extends SeedMigration {
   version = '1.0.0'
   call = () => this.prepare`
@@ -37,7 +38,7 @@ class BookMigration extends SeedMigration {
 }
 
 test('fields without models', async (ctx) => {
-  const db = new BookORM(ctx.create_fixture_path('test.db'))
+  const db = new BookORM(ctx.create_fixture_path('test.db'), {migrations})
   await db.init()
 
   db.book.create({ title: 'The Hobbit' })

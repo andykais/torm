@@ -34,6 +34,11 @@ export interface TormOptions {
   migrations?: MigrationRegistry
 }
 
+/** @internal */
+export interface TormOptionsInternal extends TormOptions {
+  migrations_internal: MigrationRegistry
+}
+
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
   private _driver: D | null = null
@@ -75,10 +80,10 @@ abstract class TormBase<D extends Driver> {
     this.close_driver()
   }
 
-  public constructor(options: TormOptions) {
+  public constructor(options: TormOptionsInternal) {
     // Torm::init can be called multiple times
     const migration_registry = options.migrations ?? new MigrationRegistry()
-    this.migrations_manager = new MigrationsManager(this, migration_registry)
+    this.migrations_manager = new MigrationsManager(this, migration_registry, options.migrations_internal)
   }
 
   protected _init(driver: D, options?: InitOptions) {

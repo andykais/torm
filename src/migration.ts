@@ -6,10 +6,6 @@ import type { TormBase } from './torm.ts'
 
 
 type Version = string
-interface MigrationRegistry {
-  initialization?: MigrationClass
-  upgrades?: MigrationClass[]
-}
 
 
 class MigrationRegistry extends StaticRegistry<MigrationClass> {
@@ -64,43 +60,58 @@ class MigrationRegistry extends StaticRegistry<MigrationClass> {
     }
   }
 
-}
-
-
-
-
-class MigrationsManager {
-  #application_version: Version
-  #torm: TormBase<Driver>
-  #migrations = {
-    initialization: [] as MigrationInstance[],
-    upgrades: [] as MigrationInstance[],
-  }
-  public registry: MigrationClass[]
-
-  public constructor(private torm: TormBase<Driver>, migration_registry: MigrationRegistry) {
-    this.registry = migration_registry.registry
-
+  get_migrations(torm: TormBase<Driver>): MigrationsSorted {
     let application_version: Version | undefined
-    // TODO so this is a problem. We have to instantiate a Migration (Model) class to find out the Migration::version because static properties cannot be accessed within the decorator
-    // the problem is instantiating and storing migration classes statically on a Torm class means each instantiated torm database is going to use the same migration class instance
-    // I _think_ this means the right approach is storing uninstantiated classes statically and instantiating each time we instantiate Torm
-    // I did like the idea that my migrations would error out at registration time, but perhaps thats overkill or even not very useful since we cant catch those exceptions very well
+    const initialization: MigrationInstance[] = []
+    const upgrades: MigrationInstance[] = []
+
     for (const migration_class of this.registry) {
       const migration = new migration_class(torm)
-      if (this.is_seed_migration(migration)) {
-        this.#migrations.initialization.push(migration)
+      if (migration.is_seed_migration()) {
+        initialization.push(migration)
         application_version = migration.version
       } else {
-        this.#migrations.upgrades.push(migration)
+        upgrades.push(migration)
       }
     }
 
     if (!application_version) {
       throw new Error('no seed migrations')
     }
+
+    return {
+      application_version,
+      initialization,
+      upgrades,
+    }
+  }
+}
+
+
+interface MigrationsSorted {
+  application_version: Version
+  initialization: MigrationInstance[]
+  upgrades: MigrationInstance[]
+}
+
+
+class MigrationsManager {
+  #application_version: Version
+  #torm: TormBase<Driver>
+  #migrations: MigrationsSorted
+  #migrations_internal: MigrationsSorted
+  public registry: MigrationClass[]
+
+  public constructor(
+    torm: TormBase<Driver>,
+    migration_registry: MigrationRegistry,
+    migration_registry_internal: MigrationRegistry,
+  ) {
+    this.registry = migration_registry.registry
+    this.#migrations_internal = migration_registry_internal.get_migrations(torm)
+    this.#migrations = migration_registry.get_migrations(torm)
     this.#torm = torm
-    this.#application_version = application_version
+    this.#application_version = this.#migrations.application_version
   }
 
   public application_version(): Version {
@@ -117,7 +128,7 @@ class MigrationsManager {
   }
 
   public is_database_initialized(): boolean {
-    return this.torm.schemas.table('__torm_metadata__') === undefined
+    return this.#torm.schemas.table('__torm_metadata__') === undefined
   }
 
   public upgrade_database() {
@@ -188,15 +199,16 @@ class MigrationsManager {
   }
 
   public initialize_database() {
-    const schemas_class = this.#torm.schemas.constructor as typeof ModelBase
     this.#torm.schemas.prepare_queries(this.#torm.driver)
-    const schemas_init = new schemas_class.migrations!.initialization!(this.#torm)
-    schemas_init.prepare_queries(this.#torm.driver)
-    schemas_init.call(this.#torm.driver)
+
+    for (const migration of this.#migrations_internal.initialization) {
+      migration.prepare_queries()
+      migration.call(this.#torm.driver)
+    }
 
     for (const migration of this.#migrations.initialization) {
       migration.prepare_queries()
-      migration.call()
+      migration.call(this.#torm.driver)
     }
     if (this.#application_version !== undefined) this.#torm.schemas.unsafe_version_set(this.#application_version)
   }
@@ -222,12 +234,15 @@ abstract class MigrationBase extends ModelBase implements MigrationInstance {
   public abstract call(driver?: Driver): void
 
   public is_seed_migration(): boolean {
-    if (this instanceof SeedMigrationBase) return true
-    else return false
+    return false
   }
 }
 
-abstract class SeedMigrationBase extends MigrationBase {}
+abstract class SeedMigrationBase extends MigrationBase {
+  public override is_seed_migration(): boolean {
+    return true
+  }
+}
 
 export { MigrationsManager, MigrationBase, SeedMigrationBase, MigrationError, MigrationValidationError, MigrationRegistry  }
 export type { Version, MigrationClass, MigrationInstance }

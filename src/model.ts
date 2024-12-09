@@ -7,13 +7,7 @@ import type { SqlTemplateArg, RawSqlInterpolationValues } from './query.ts'
 import type { MigrationClass } from './migration.ts'
 import type { TormBase } from './torm.ts'
 
-interface ModelOptions {
-  override_torm_status: boolean
-}
-
 interface ModelClass {
-  migrations?: typeof ModelBase.migrations
-  // new (torm: TormBase<Driver>, options: ModelOptions): ModelBase
   new (torm: TormBase<Driver>): ModelBase
 }
 
@@ -31,11 +25,6 @@ interface QueryFn {
 abstract class ModelBase implements ModelInstance {
   private _torm: TormBase<Driver> | null = null
   private registered_stmts: Statement<any, any>[] = []
-
-  static migrations?: {
-    initialization?: MigrationClass
-    upgrades?: MigrationClass[]
-  }
 
   public query: QueryFn
 
