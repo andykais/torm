@@ -1,3 +1,13 @@
+/**
+  * @module
+  * This module contains errors that the torm package is expected to throw
+  *
+  */
+
+export class MigrationError extends Error {}
+
+export class MigrationValidationError extends MigrationError {}
+
 export class QueryError extends Error {
   public override name = 'QueryError'
 

@@ -36,15 +36,14 @@ jobs:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
 
-      # lint source code & jsr publish requirements
       - name: Lint
         run: deno lint --ignore=deno_dependency_cache
 
       - name: Test
         run: deno task test
 
-      # - name: Lint Publish JSR
-      #   run: deno publish --dry-run
+      - name: Lint JSR Publish
+        run: deno publish --dry-run
 
   publish:
     runs-on: ubuntu-latest
@@ -69,6 +68,6 @@ jobs:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
 
-      - name: Publish package
+      - name: Publish to JSR
         if: github.ref == 'refs/heads/main'
         run: deno publish --allow-slow-types

@@ -53,6 +53,9 @@ abstract class TormBase<D extends Driver> {
   // a decent solution here is to make this undefined by default. So migrations become an explicit thing you set up and manage
   static migrations: MigrationRegistry = new MigrationRegistry()
 
+  /**
+    * Register a model in torm. Any queries registered under that model will be prepared during initialization
+    */
   protected model<T extends ModelClass>(model_class: T): InstanceType<T> {
     const model = new model_class(this)
     this.model_class_registry.push(model_class)

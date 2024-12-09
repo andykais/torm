@@ -8,18 +8,20 @@ A typesafe database ORM that exposes the full power of handwritten sql statement
 
 ## Getting Started
 ```ts
-import { Torm, Model, field } from 'jsr:@torm/sqlite'
+import { Torm, Model, schema, field } from 'jsr:@torm/sqlite'
 
 
-class Book extends Model('book', {
-  id:           field.number(),
-  title:        field.string(),
-  language:     field.string().default('english'),
-  published_at: field.datetime().optional(),
-}) {
-  create = this.query.exec`INSERT INTO book (title, language, published_at) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at]})`
-  get = this.query.one`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
-  list = this.query.many`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
+class Book extends Model {
+  static schema = schema('book', {
+    id:           field.number(),
+    title:        field.string(),
+    language:     field.string().default('english'),
+    published_at: field.datetime().optional(),
+  })
+
+  create = this.query.exec`INSERT INTO book (title, language, published_at) VALUES (${[Book.schema.params.title, Book.params.language, Book.params.published_at]})`
+  get = this.query.one`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.schema.params.id}`
+  list = this.query.many`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.schema.params.id}`
 }
 
 
@@ -42,23 +44,27 @@ Torm includes a full migration system, which can be declared like so:
 ```ts
 import { Torm, Model, Migration, SeedMigration, field } from 'jsr:@torm/sqlite'
 
-class Author extends Model('author', {
-  id:           field.number(),
-  name:         field.string(),
-}) {
-  create = this.query.exec`INSERT INTO author (name) VALUES (${Author.params.name})`
+class Author extends Model {
+  static schema = schema('author', {
+    id:           field.number(),
+    name:         field.string(),
+  })
+
+  create = this.query.exec`INSERT INTO author (name) VALUES (${Author.schema.params.name})`
 }
 
-class Book extends Model('book', {
-  id:           field.number(),
-  title:        field.string(),
-  language:     field.string().default('english'),
-  published_at: field.datetime().optional(),
-  author_id:    field.number().optional(),
-}) {
-  create = this.query.exec`INSERT INTO book (title, language, published_at, author_id) VALUES (${[Book.params.title, Book.params.language, Book.params.published_at, Book.params.author_id]})`
-  get = this.query.one`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`
-  set_author = this.query.exec`UPDATE book SET author_id = ${Book.params.author_id} WHERE title = ${Book.params.title}`
+class Book extends Model {
+  static schema = schema('book', {
+    id:           field.number(),
+    title:        field.string(),
+    language:     field.string().default('english'),
+    published_at: field.datetime().optional(),
+    author_id:    field.number().optional(),
+  })
+
+  create = this.query.exec`INSERT INTO book (title, language, published_at, author_id) VALUES (${[Book.schema.params.title, Book.schema.params.language, Book.schema.params.published_at, Book.schema.params.author_id]})`
+  get = this.query.one`SELECT ${Book.schema.result['*']} FROM book WHERE id = ${Book.schema.params.id}`
+  set_author = this.query.exec`UPDATE book SET author_id = ${Book.schema.params.author_id} WHERE title = ${Book.schema.params.title}`
 }
 
 class BookORM extends Torm {
@@ -66,7 +72,8 @@ class BookORM extends Torm {
   author = this.model(Author)
 }
 
-@BookORM.migrations.register()
+const migrations = new MigrationRegistry()
+@migrations.register()
 class InitializationMigration extends SeedMigration {
   version = '1.1.0'
   
@@ -90,6 +97,7 @@ class InitializationMigration extends SeedMigration {
   }
 }
 // later on, we may add a author table
+@migrations.register()
 class AddAuthorIdColumnMigration extends Migration {
     version = '1.1.0'
     call() {
@@ -97,7 +105,7 @@ class AddAuthorIdColumnMigration extends Migration {
     }
 }
 
-const db = new BookORM('books.db')
+const db = new BookORM('books.db', {migrations})
 await db.init()
 const info = db.author.create({ name: 'JR Tolkien' })
 db.book.set_author({ title: 'The Hobbit', author_id: info.last_insert_row_id })

@@ -1,3 +1,9 @@
+/**
+  * @module
+  *
+  * Functions used to define the encoded and decoded types for a database field. By default, several basic types are included. Use {@linkcode FieldDefinitionBase} if you need to define your own custom encoder/decoder
+  */
+
 import * as z from 'zod'
 
 // accepted column values (for sqlite, for now)

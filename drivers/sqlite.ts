@@ -221,6 +221,32 @@ ${columns.join('\n  ')}
   }
 }
 
+/**
+  * The main entrypoint for using torm. All models are attached to this class and it is used to instantiate, migrate, and connect to your database.
+  *
+  * @example
+  * ```ts
+  * import { Torm, Model, Migration, SeedMigration, field } from 'jsr:@torm/sqlite'
+  *
+  * class Account extends Model {
+  *   static schema = schema('author', {
+  *     id:           field.number(),
+  *     name:         field.string(),
+  *   })
+  *
+  *   create = this.query.exec`INSERT INTO author (name) VALUES (${Author.schema.params.name})`
+  * }
+  *
+  * class UsersORM extends Torm {
+  *   account = this.model(Account) // attach models with Torm::model
+  * }
+  *
+  * const db = new UsersORM('books.db')
+  * db.init() // initialize your database connection (by default, migrations are ran automatically on initialization)
+  * db.account.create({name: 'Bob Ross'}) // access prepared statements on models
+  * db.close() // close down your database connection
+  * ```
+  */
 class Torm extends TormBase<sqlite3.Database> {
   public constructor(private db_path: string, torm_options: TormOptions = {}, private sqlite_options: sqlite3.DatabaseOpenOptions = {}) {
     torm_options.migrations = torm_options.migrations ?? new MigrationRegistry()
@@ -251,8 +277,8 @@ export {
 
 export * as errors from '../src/errors.ts'
 
-type Database = sqlite3.Database
-export type { Database as Driver }
+/** Underlying sqlite driver {@link https://jsr.io/@db/sqlite} */
+export type Driver = sqlite3.Database
 export { field }
 export { Vars }
 export { schema }

@@ -1,6 +1,7 @@
 import * as semver from '@std/semver'
 import { ModelBase } from './model.ts'
 import { StaticRegistry } from './static_registry_decorator.ts'
+import { MigrationValidationError, MigrationError } from './errors.ts'
 import type { Driver } from './util.ts'
 import type { TormBase } from './torm.ts'
 
@@ -220,9 +221,6 @@ interface MigrationInstance extends ModelBase {
   call: (driver?: Driver) => void
   is_seed_migration(): boolean
 }
-
-class MigrationError extends Error {}
-class MigrationValidationError extends MigrationError {}
 
 abstract class MigrationBase extends ModelBase implements MigrationInstance {
   public abstract version: string
