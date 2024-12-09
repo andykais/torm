@@ -1,7 +1,7 @@
 /**
  * @module
  *
- * This module is just a default export containing non-driver specific symbols. Likely, you want to use the driver specific exports (e.g. `@andykais/torm/sqlite`)
+ * This module is just a default export containing non-driver specific symbols. Likely, you want to use the driver specific exports (e.g. {@linkcode Torm})
  *
  */
 export { schema } from './schema.ts'

@@ -25,6 +25,9 @@ abstract class ModelBase implements ModelInstance {
   private _torm: TormBase<Driver> | null = null
   private registered_stmts: Statement<any, any>[] = []
 
+  /**
+    * Declare database queries that will be prepared upon {@linkcode Torm.init}. A query can be used to return one, zero or many values depending on the method used.
+    */
   public query: QueryFn
 
   public constructor(protected torm?: TormBase<Driver>) {
