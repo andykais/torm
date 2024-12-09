@@ -1,30 +1,33 @@
 import { test, assert_equals, expect_type, assert_throws } from './util.ts'
-import { Model, Torm, SeedMigration, field, errors, MigrationRegistry } from '../drivers/sqlite.ts'
+import { Model, Torm, SeedMigration, field, errors, MigrationRegistry, schema } from '../drivers/sqlite.ts'
 
 
-class Author extends Model('author', {
-  id:         field.number(),
-  first_name: field.string().optional(),
-  last_name:  field.string(),
-  birthday:   field.datetime().optional(),
-}) {
-  create = this.query`INSERT INTO author (first_name, last_name, birthday) VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`.exec
-  get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
+class Author extends Model {
+  static schema = schema('author', {
+    id:         field.number(),
+    first_name: field.string().optional(),
+    last_name:  field.string(),
+    birthday:   field.datetime().optional(),
+  })
+
+  create = this.query`INSERT INTO author (first_name, last_name, birthday) VALUES (${[Author.schema.params.first_name, Author.schema.params.last_name, Author.schema.params.birthday]})`.exec
+  get = this.query`SELECT ${Author.schema.result['*']} FROM author WHERE id = ${Author.schema.params.id}`.one
 }
 
 
-class Book extends Model('book', {
-  id:         field.number(),
-  author_id:  field.number(),
-  title:      field.string(),
-  data:       field.json(),
-  language:   field.string().default('english'),
-}) {
-  create = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`.exec
-  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
+class Book extends Model {
+  static schema = schema('book', {
+    id:         field.number(),
+    author_id:  field.number(),
+    title:      field.string(),
+    data:       field.json(),
+    language:   field.string().default('english'),
+  })
+  create = this.query`INSERT INTO book (title, author_id, language, data) VALUES (${[Book.schema.params.title, Book.schema.params.author_id, Book.schema.params.language, Book.schema.params.data]})`.exec
+  get = this.query`SELECT ${Book.schema.result['*']} FROM book WHERE id = ${Book.schema.params.id}`.one
 
   list_with_author = this.query`
-    SELECT ${[Book.result.title, Author.result.first_name, Author.result.last_name]} FROM book
+    SELECT ${[Book.schema.result.title, Author.schema.result.first_name, Author.schema.result.last_name]} FROM book
     INNER JOIN author ON author_id = Author.id`.all
 }
 

@@ -1,35 +1,39 @@
 import { test, assert_equals } from './util.ts'
-import { Model, Torm, Migration, SeedMigration, MigrationRegistry, field } from '../drivers/sqlite.ts'
+import { Model, Torm, Migration, SeedMigration, MigrationRegistry, field, schema } from '../drivers/sqlite.ts'
 
 
-class Author extends Model('author', {
-  id:         field.number(),
-  first_name: field.string().optional(),
-  last_name:  field.string(),
-}) {
-  create = this.query`INSERT INTO author (first_name, last_name) VALUES (${[Author.params.first_name, Author.params.last_name]})`.exec
-  get = this.query`SELECT ${Author.result['*']} FROM author WHERE id = ${Author.params.id}`.one
+class Author extends Model {
+  static schema = schema('author', {
+    id:         field.number(),
+    first_name: field.string().optional(),
+    last_name:  field.string(),
+  })
+
+  create = this.query`INSERT INTO author (first_name, last_name) VALUES (${[Author.schema.params.first_name, Author.schema.params.last_name]})`.exec
+  get = this.query`SELECT ${Author.schema.result['*']} FROM author WHERE id = ${Author.schema.params.id}`.one
 }
 
-class Book extends Model('book', {
-  id:           field.number(),
-  author_id:    field.number(),
-  title:        field.string(),
-  data:         field.json().optional(),
-  published_at: field.datetime().optional(),
-}) {
-  create = this.query`INSERT INTO book (title, author_id, data, published_at) VALUES (${[Book.params.title, Book.params.author_id, Book.params.data, Book.params.published_at]})`.exec
-  get = this.query`SELECT ${Book.result['*']} FROM book WHERE id = ${Book.params.id}`.one
-  find = this.query`SELECT ${Book.result['*']} FROM book`.all
+class Book extends Model {
+  static schema = schema('book', {
+    id:           field.number(),
+    author_id:    field.number(),
+    title:        field.string(),
+    data:         field.json().optional(),
+    published_at: field.datetime().optional(),
+  })
+
+  create = this.query`INSERT INTO book (title, author_id, data, published_at) VALUES (${[Book.schema.params.title, Book.schema.params.author_id, Book.schema.params.data, Book.schema.params.published_at]})`.exec
+  get = this.query`SELECT ${Book.schema.result['*']} FROM book WHERE id = ${Book.schema.params.id}`.one
+  find = this.query`SELECT ${Book.schema.result['*']} FROM book`.all
   get_with_author = this.query`SELECT ${[
-    Book.result.title,
-    Book.result.published_at,
-    Book.result.data,
-    Author.result.last_name,
-    Author.result.first_name,
+    Book.schema.result.title,
+    Book.schema.result.published_at,
+    Book.schema.result.data,
+    Author.schema.result.last_name,
+    Author.schema.result.first_name,
   ]} FROM book
     INNER JOIN author ON author.id = author_id
-    WHERE title = ${Book.params.title}`.one
+    WHERE title = ${Book.schema.params.title}`.one
 }
 
 class BookORM extends Torm {

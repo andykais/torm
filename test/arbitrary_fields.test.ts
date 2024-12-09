@@ -1,5 +1,5 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Vars, Torm, SeedMigration, field, MigrationRegistry } from '../drivers/sqlite.ts'
+import { Model, Vars, Torm, SeedMigration, field, MigrationRegistry, schema } from '../drivers/sqlite.ts'
 
 
 const vars = Vars({
@@ -8,16 +8,18 @@ const vars = Vars({
 })
 
 
-class Book extends Model('book', {
-  id:    field.number(),
-  title: field.string(),
-}) {
-  create = this.query`INSERT INTO book (title) VALUES (${Book.params.title})`.exec
+class Book extends Model {
+  static schema = schema('book', {
+    id:    field.number(),
+    title: field.string(),
+  })
+
+  create = this.query`INSERT INTO book (title) VALUES (${Book.schema.params.title})`.exec
   // other potential designs...
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params('limit').number()}`.exec
   // create = this.query`SELECT ${Book.params['*']} FROM book LIMIT ${params.limit.number()}`.exec
 
-  list = this.query`SELECT ${Book.result['*']} FROM book ORDER BY id LIMIT ${vars.params.limit}`.all
+  list = this.query`SELECT ${Book.schema.result['*']} FROM book ORDER BY id LIMIT ${vars.params.limit}`.all
   count = this.query`SELECT COUNT(*) as ${vars.result.total} FROM book`.one
 }
 

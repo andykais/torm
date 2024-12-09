@@ -37,7 +37,7 @@
 import * as sqlite3 from '@db/sqlite'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
-import { ModelBase, WithStaticSchema } from '../src/model.ts'
+import { ModelBase } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions, TormOptions } from '../src/torm.ts'
 import { MigrationBase, MigrationRegistry, SeedMigrationBase, type MigrationClass } from '../src/migration.ts'
@@ -96,12 +96,9 @@ class Statement<
 }
 
 // TODO see if we can make this abstract for the mixin
-abstract class DriverModel extends ModelBase {
+abstract class Model extends ModelBase {
   protected create_stmt = Statement.create
 }
-
-class TempModelNonAbstract extends DriverModel {}
-const Model = WithStaticSchema(TempModelNonAbstract)
 
 abstract class SeedMigration extends SeedMigrationBase {
   protected create_stmt = Statement.create
@@ -114,10 +111,12 @@ abstract class Migration extends MigrationBase {
 
 const migrations_internal = new MigrationRegistry()
 
-class SqliteMasterModel extends Model('sqlite_master', {
-  name: field.string(),
-  sql: field.string(),
-}) {}
+class SqliteMasterModel extends Model {
+  static schema = schema('sqlite_master', {
+    name: field.string(),
+    sql: field.string(),
+  })
+}
 
 @migrations_internal.register()
 class InitializeTormMetadata extends SeedMigration {
@@ -142,22 +141,23 @@ interface SchemaTable {
   table_name: string
   table_schema: string
 }
-class SchemasModelImpl extends Model('__torm_metadata__', {
-  version: field.string(),
-  updated_at: field.datetime(),
-  created_at: field.datetime(),
-}) implements SchemasModel {
+class SchemasModelImpl extends Model implements SchemasModel {
+  static schema = schema('__torm_metadata__', {
+    version: field.string(),
+    updated_at: field.datetime(),
+    created_at: field.datetime(),
+  })
 
   // migrations = migrations_internal
 
-  private _tables = this.query`SELECT ${SqliteMasterModel.result['*']} FROM sqlite_master ORDER BY name`
+  private _tables = this.query`SELECT ${SqliteMasterModel.schema.result['*']} FROM sqlite_master ORDER BY name`
 
   unsafe_version_set(version: string) {
-    this.prepare`UPDATE __torm_metadata__ SET version = ${SchemasModelImpl.params.version}`.exec({ version })
+    this.prepare`UPDATE __torm_metadata__ SET version = ${SchemasModelImpl.schema.params.version}`.exec({ version })
   }
 
   version(): string {
-    return this.prepare`SELECT ${SchemasModelImpl.result.version} FROM __torm_metadata__`.one({})!.version
+    return this.prepare`SELECT ${SchemasModelImpl.schema.result.version} FROM __torm_metadata__`.one({})!.version
   }
 
   table(table_name: string): SchemaTable | undefined {
@@ -249,7 +249,6 @@ export {
   Torm,
   Statement,
   Model,
-  DriverModel,
   Migration,
   SeedMigration,
 }

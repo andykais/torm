@@ -1,16 +1,18 @@
 import { test, assert_equals, assert_throws } from './util.ts'
-import { Model, Torm, Migration, MigrationRegistry, SeedMigration, MigrationValidationError, field } from '../drivers/sqlite.ts'
+import { Model, Torm, Migration, MigrationRegistry, SeedMigration, MigrationValidationError, field, schema } from '../drivers/sqlite.ts'
 
 
-class Book extends Model('book', {
-  id:    field.number(),
-  title: field.string(),
-}) {
-  list = this.query`SELECT ${Book.result['*']} FROM book`.all
+class Book extends Model {
+  static schema = schema('book', {
+    id:    field.number(),
+    title: field.string(),
+  })
+
+  list = this.query`SELECT ${Book.schema.result['*']} FROM book`.all
 }
 
 
-test('upgrade migration versions must not exceed the seed migration version', (ctx) => {
+test('upgrade migration versions must not exceed the seed migration version', () => {
 
   class BookORM extends Torm {
     book = this.model(Book)

@@ -157,16 +157,5 @@ abstract class ModelBase implements ModelInstance {
   }
 }
 
-const WithStaticSchema =
-  <Class extends Constructor>(base: Class) =>
-    <T extends SchemaInputGeneric>(table_name: string, schema_input: T) => {
-      return class IncludingStaticSchema extends base {
-        static schema_types: InferTypes<T>
-        static schema = schema(table_name, schema_input)
-        static params = IncludingStaticSchema.schema.params
-        static result = IncludingStaticSchema.schema.result
-      }
-    }
-
-export { ModelBase, WithStaticSchema }
+export { ModelBase }
 export type { ModelClass, ModelInstance }

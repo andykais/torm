@@ -1,6 +1,3 @@
-import { type StatementBase } from './statement.ts'
-
-
 export class QueryError extends Error {
   public override name = 'QueryError'
 

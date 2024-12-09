@@ -1,43 +1,46 @@
 import { test, assert_equals, expect_type } from './util.ts'
-import { Model, Torm, SeedMigration, field, MigrationRegistry } from '../drivers/sqlite.ts'
+import { Model, Torm, SeedMigration, field, MigrationRegistry, schema } from '../drivers/sqlite.ts'
 
 
-class Author extends Model('author', {
-  id:         field.number(),
-  first_name: field.string().optional(),
-  last_name:  field.string(),
-  birthday:   field.datetime().optional(),
-}) {
+class Author extends Model {
+  static schema = schema('author', {
+    id:         field.number(),
+    first_name: field.string().optional(),
+    last_name:  field.string(),
+    birthday:   field.datetime().optional(),
+  })
   queries = {
     create:
       this.query.exec`INSERT INTO author (first_name, last_name, birthday)
-                      VALUES (${[Author.params.first_name, Author.params.last_name, Author.params.birthday]})`,
+                      VALUES (${[Author.schema.params.first_name, Author.schema.params.last_name, Author.schema.params.birthday]})`,
 
     get:
-      this.query.one `SELECT ${Author.result['*']} FROM author
-                      WHERE id = ${Author.params.id}`,
+      this.query.one `SELECT ${Author.schema.result['*']} FROM author
+                      WHERE id = ${Author.schema.params.id}`,
   }
 }
 
 
-class Book extends Model('book', {
-  id:         field.number(),
-  author_id:  field.number(),
-  title:      field.string(),
-  data:       field.json(),
-  language:   field.string().default('english'),
-}) {
+class Book extends Model {
+  static schema = schema('book', {
+    id:         field.number(),
+    author_id:  field.number(),
+    title:      field.string(),
+    data:       field.json(),
+    language:   field.string().default('english'),
+  })
+
   queries = {
     create:
       this.query.exec`INSERT INTO book (title, author_id, language, data)
-                      VALUES (${[Book.params.title, Book.params.author_id, Book.params.language, Book.params.data]})`,
+                      VALUES (${[Book.schema.params.title, Book.schema.params.author_id, Book.schema.params.language, Book.schema.params.data]})`,
 
     get:
-      this.query.one `SELECT ${Book.result['*']} FROM book
-                      WHERE id = ${Book.params.id}`,
+      this.query.one `SELECT ${Book.schema.result['*']} FROM book
+                      WHERE id = ${Book.schema.params.id}`,
 
     list_with_author:
-      this.query.many`SELECT ${[Book.result.title, Author.result.first_name, Author.result.last_name]} FROM book
+      this.query.many`SELECT ${[Book.schema.result.title, Author.schema.result.first_name, Author.schema.result.last_name]} FROM book
                       INNER JOIN author ON author_id = Author.id`,
   }
 
