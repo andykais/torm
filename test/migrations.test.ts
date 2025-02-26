@@ -146,7 +146,7 @@ BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD
 
 
 test('auto migration', async (ctx) => {
-  let db_new: BookORM | undefined = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
+  const db_new: BookORM | undefined = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
