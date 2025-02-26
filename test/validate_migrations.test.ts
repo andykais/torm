@@ -67,7 +67,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
     call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
   }
 
-  // tihs should fail because we are missing a 1.2.0 upgrade, no database actions have been taken yet
+  // this should fail because we are missing a 1.2.0 upgrade, no database actions have been taken yet
   const db_old = new BookORM(db_1_0_0, {migrations})
   assert_throws(() => db_old.migrations.validate(), MigrationValidationError)
 
@@ -90,7 +90,6 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
 test('fresh dbs should not touch upgrade migrations', async (ctx) => {
 
   class BookORM extends Torm {
-    static override migrations = new MigrationRegistry()
     book = this.model(Book)
   }
 

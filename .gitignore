@@ -2,3 +2,4 @@ test/fixtures/
 
 # used inside github actions (.github/workflows/ci.yml)
 deno_dependency_cache
+scratchwork

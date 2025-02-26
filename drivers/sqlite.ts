@@ -34,7 +34,7 @@
  * ```
  */
 
-import * as sqlite3 from '@db/sqlite'
+import * as sqlite3 from 'node:sqlite'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase } from '../src/model.ts'
@@ -48,11 +48,11 @@ import * as errors from '../src/errors.ts'
 class Statement<
     Params extends SchemaGeneric,
     Result extends SchemaGeneric
-  > extends StatementBase<sqlite3.Statement, Params, Result> {
+  > extends StatementBase<sqlite3.StatementSync, Params, Result> {
 
   public one = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
     try {
-      const row = this.stmt.get<RawRowData>(this.encode_params(params))
+      const row = this.stmt.get(this.encode_params(params)) as RawRowData
       if (row) return this.decode_result(row)
     } catch(e) {
       throw this.parse_exception(params, e)
@@ -61,7 +61,8 @@ class Statement<
 
   public all = (...[params]: OptionalOnEmpty<Params>): Result[] => {
     try {
-      return this.stmt.all(this.encode_params(params)).map(this.decode_result)
+      const rows = this.stmt.all(this.encode_params(params)) as RawRowData[]
+      return rows.map(this.decode_result)
     } catch (e) {
       throw this.parse_exception(params, e)
     }
@@ -70,10 +71,10 @@ class Statement<
 
   public exec = (...[params]: OptionalOnEmpty<Params>): {changes: number; last_insert_row_id: number} => {
     try {
-      const changes = this.stmt.run(this.encode_params(params))
+      const info = this.stmt.run(this.encode_params(params))
       return {
-        changes,
-        last_insert_row_id: this.driver.lastInsertRowId
+        changes: info.changes as number,
+        last_insert_row_id: info.lastInsertRowid as number
       }
     } catch (e) {
       throw this.parse_exception(params, e)
@@ -88,7 +89,7 @@ class Statement<
     return new errors.QueryError(this.sql, params, error.message)
   }
 
-  protected prepare = (sql: string): sqlite3.Statement => this.driver.prepare(sql)
+  protected prepare = (sql: string): sqlite3.StatementSync => this.driver.prepare(sql)
 
   static create = <Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, result: Result): Statement<Params, Result> => {
     return new Statement<Params, Result>(sql, params, result)
@@ -121,9 +122,9 @@ class SqliteMasterModel extends Model {
 @migrations_internal.register()
 class InitializeTormMetadata extends SeedMigration {
   version = '0.1.0'
-  call(driver?: sqlite3.Database) {
+  call(driver?: sqlite3.DatabaseSync) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
-    driver.run(`
+    driver.exec(`
       CREATE TABLE IF NOT EXISTS __torm_metadata__ (
         singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can exist
         torm_version TEXT NOT NULL,
@@ -131,9 +132,7 @@ class InitializeTormMetadata extends SeedMigration {
         updated_at DATETIME NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
         created_at DATETIME NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
       )`)
-    driver.prepare(`INSERT INTO __torm_metadata__ (torm_version) VALUES (:torm_version)`).run({
-      torm_version: this.version
-    })
+    driver.exec(`INSERT INTO __torm_metadata__ (torm_version) VALUES ('${this.version}')`)
   }
 }
 
@@ -247,21 +246,23 @@ ${columns.join('\n  ')}
   * db.close() // close down your database connection
   * ```
   */
-class Torm extends TormBase<sqlite3.Database> {
-  public constructor(private db_path: string, torm_options: TormOptions = {}, private sqlite_options: sqlite3.DatabaseOpenOptions = {}) {
+class Torm extends TormBase<sqlite3.DatabaseSync> {
+  public constructor(private db_path: string, torm_options: TormOptions = {}, private sqlite_options: sqlite3.DatabaseSyncOptions = {}) {
     torm_options.migrations = torm_options.migrations ?? new MigrationRegistry()
     super({...torm_options, migrations_internal})
+    this.sqlite_options = {readOnly: false, ...this.sqlite_options}
   }
 
   // deno-lint-ignore require-await
   public async init(options?: InitOptions) {
-    const driver = new sqlite3.Database(this.db_path, this.sqlite_options)
-    // await driver.connect()
+    const driver = new sqlite3.DatabaseSync(this.db_path, this.sqlite_options)
     this._init(driver, options)
     this.schemas.version()
   }
 
-  public close_driver() { this.driver.close() }
+  public close_driver() {
+    this.driver.close()
+  }
 
   protected schemas_class = SchemasModelImpl
   public schemas: SchemasModel = new SchemasModelImpl(this)
@@ -278,7 +279,7 @@ export {
 export * as errors from '../src/errors.ts'
 
 /** Underlying sqlite driver {@link https://jsr.io/@db/sqlite} */
-export type Driver = sqlite3.Database
+export type Driver = sqlite3.DatabaseSync
 export { field }
 export { Vars }
 export { schema }

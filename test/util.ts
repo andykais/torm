@@ -80,7 +80,11 @@ class Debugger {
   }
 }
 
-function test(test_name: string, fn: (test_context: TestContext) => any, only = false) {
+interface TestOptions {
+  only?: boolean
+  ignore?: boolean
+}
+function test(test_name: string, fn: (test_context: TestContext) => any, test_options: TestOptions = {}) {
   const test_context = new TestContext(test_name)
 
   const test_fn = async () => {
@@ -99,9 +103,11 @@ function test(test_name: string, fn: (test_context: TestContext) => any, only = 
   Deno.test({
     name: test_name,
     fn: test_fn,
-    only
+    only: test_options.only,
+    ignore: test_options.ignore,
   })
 }
-test.only = (name: string, fn: (test_context: TestContext) => any) => { test(name, fn, true) }
+test.only = (name: string, fn: (test_context: TestContext) => any) => { test(name, fn, {only: true}) }
+test.skip = (name: string, fn: (test_context: TestContext) => any) => { test(name, fn, {ignore: true}) }
 
 export { test }

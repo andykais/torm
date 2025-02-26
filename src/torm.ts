@@ -46,13 +46,6 @@ abstract class TormBase<D extends Driver> {
   private model_class_registry: ModelClass[] = []
   private model_registry: ModelInstance[] = []
 
-
-  // NOTE this is currently a weird setup.
-  // Torm::migrations is by default statically defined on Torm. That means multiple classes end up sharing the same state
-  // setting it on your class like this solves that, but its not intuitive.
-  // a decent solution here is to make this undefined by default. So migrations become an explicit thing you set up and manage
-  static migrations: MigrationRegistry = new MigrationRegistry()
-
   /**
     * Register a model in torm. Any queries registered under that model will be prepared during initialization
     */

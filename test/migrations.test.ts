@@ -146,7 +146,7 @@ BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD
 
 
 test('auto migration', async (ctx) => {
-  let db_new = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
+  let db_new: BookORM | undefined = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
   await db_new.init()
   assert_equals('1.2.0', db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
@@ -162,11 +162,11 @@ test('auto migration', async (ctx) => {
   db_old.close()
 
   // check that we dont run migrations twice
-  db_new = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
-  await db_new.init()
-  assert_equals('1.2.0', db_new.schemas.version())
-  assert_equals(tables_new, db_new.schemas.tables())
-  db_new.close()
+  const db_new2 = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
+  await db_new2.init()
+  assert_equals('1.2.0', db_new2.schemas.version())
+  assert_equals(tables_new, db_new2.schemas.tables())
+  db_new2.close()
 })
 
 test('manual migration', async (ctx) => {
