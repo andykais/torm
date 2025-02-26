@@ -27,7 +27,8 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v2.x
+          # note that deno 2.2.2 currently has a node:sqlite bug that breaks our tests https://github.com/denoland/deno/issues/28309
+          deno-version: canary
 
 
       - name: Cache Deno dependencies 
