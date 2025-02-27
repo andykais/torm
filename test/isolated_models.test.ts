@@ -90,7 +90,7 @@ class BookSeedMigration extends SeedMigration {
 
 
 
-test('usage', async (ctx) => {
+test('query usage with joins across models', async (ctx) => {
   const db = new BookORM(ctx.create_fixture_path('usage.db'), {migrations})
   await db.init()
 

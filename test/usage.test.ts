@@ -75,7 +75,7 @@ class BookSeedMigration extends SeedMigration {
 
 
 
-test('usage', async (ctx) => {
+test('read/write usage with per model migrations', async (ctx) => {
   const db = new BookORM(ctx.create_fixture_path('usage.db'), {migrations})
   await db.init()
 
