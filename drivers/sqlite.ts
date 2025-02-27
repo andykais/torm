@@ -1,6 +1,4 @@
 /**
- * @module
- *
  * This module contains the torm interface for sqlite databases
  *
  * @example
@@ -32,6 +30,8 @@
  * console.log(row?.title, 'written in', row?.language, 'published on', row?.published_at)
  * // "The Hobbit written in english published on 1937-09-21T04:00:00.000Z"
  * ```
+ *
+ * @module
  */
 
 import * as sqlite3 from 'node:sqlite'
@@ -96,15 +96,88 @@ class Statement<
   }
 }
 
-// TODO see if we can make this abstract for the mixin
+/**
+  * Models are the representation of tables and queries in Torm.
+  *
+  * @example
+  * ```ts
+  * class Account extends Model {
+  *   static schema = schema('author', {
+  *     id:           field.number(),
+  *     name:         field.string(),
+  *   })
+  *
+  *   create = this.query.exec`INSERT INTO author (name) VALUES (${Author.schema.params.name})`
+  * }
+  * ```
+  */
 abstract class Model extends ModelBase {
   protected create_stmt = Statement.create
 }
 
+/**
+  * SeedMigrations are specifically designed to be ran on the initial creation of a database. These should create all the relevant tables, indexes, triggers that you intend for your database.
+  *
+  * @example
+  * ```ts
+  * const migrations = new MigrationRegistry()
+  *
+  * @migrations.register()
+  * class InitializationMigration extends SeedMigration {
+  *   version = '1.1.0'
+  *
+  *   call() {
+  *     this.driver.exec(`
+  *       CREATE TABLE author (
+  *         id INTEGER NOT NULL PRIMARY KEY,
+  *         name TEXT NOT NULL
+  *       );
+  *
+  *       CREATE TABLE book (
+  *         id INTEGER NOT NULL PRIMARY KEY,
+  *         title TEXT NOT NULL,
+  *         data TEXT,
+  *         language TEXT NOT NULL,
+  *         published_at TEXT,
+  *         author_id INTEGER,
+  *         FOREIGN KEY(author_id) REFERENCES author(id)
+  *       )`
+  *     )
+  *   }
+  * }
+  * ```
+  */
 abstract class SeedMigration extends SeedMigrationBase {
   protected create_stmt = Statement.create
 }
 
+/**
+  * Migrations are used to upgrade your database structure as you roll out new versions of code. These can be ran automatically, programatically. Torm currently only supports forward migrations. At the end of the day, this class essentially just wraps logic around version numbers and a function call with access to a database driver.
+  * @example
+  * ```ts
+  * const migrations = new MigrationRegistry()
+  *
+  * @migrations.register()
+  * class AddNewColumnMigration extends Migration {
+  *   version = '1.1.0'
+  *
+  *   call() {
+  *     this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
+  *   }
+  * }
+  *
+  * class BookORM extends Torm {}
+  *
+  * const db = new BookORM('books.db', {migrations})
+  * db.init({auto_migrate: false}) // this will prevent torm from automatically running migrations upon startup
+  * // this is the general workflow for migrating manually:
+  * const current_db_version = db.schemas.version()
+  * if (db.migrations.is_database_outdated()) {
+  *   db.migrations.upgrade_database()
+  * }
+  *
+  * ```
+  */
 abstract class Migration extends MigrationBase {
   protected create_stmt = Statement.create
 }
