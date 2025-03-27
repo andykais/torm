@@ -28,7 +28,7 @@ class Book extends Model {
   get = this.query`SELECT ${Book.schema.result['*']} FROM book WHERE id = ${Book.schema.params.id}`.one
 
   list_with_author = this.query`
-    SELECT ${[Book.schema.result.title, Author.schema.result.first_name, Author.schema.result.last_name]} FROM book
+    SELECT ${[Book.schema.result.title, Author.schema.result.first_name, Author.schema.result.last_name, Author.schema.result.birthday]} FROM book
     INNER JOIN author ON author_id = Author.id`.all
 }
 
@@ -79,7 +79,8 @@ test('read/write usage with per model migrations', async (ctx) => {
   const db = new BookORM(ctx.create_fixture_path('usage.db'), {migrations})
   await db.init()
 
-  const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein' })
+  const tolkien_birthday = new Date('1/3/1892')
+  const tolkien_insert = db.author.create({ first_name: 'JR', last_name: 'Tolkein', birthday: tolkien_birthday })
   const hobbit_insert = db.book.create({ title: 'The Hobbit', author_id: tolkien_insert.last_insert_row_id, data: {some: 'data'} })
 
   const book_row = db.book.get({ id: hobbit_insert.last_insert_row_id })
@@ -97,6 +98,12 @@ test('read/write usage with per model migrations', async (ctx) => {
   assert_equals(books_and_authors[0]['title'], 'The Hobbit')
   assert_equals(books_and_authors[0]['first_name'], 'JR')
   assert_equals(books_and_authors[0]['last_name'], 'Tolkein')
+  assert_equals(books_and_authors[0]['birthday'], tolkien_birthday)
+
+  const raw_row = db.book.driver.prepare('SELECT * FROM author').get()! as any
+  assert_equals(raw_row['first_name'], 'JR')
+  assert_equals(raw_row['last_name'], 'Tolkein')
+  assert_equals(raw_row['birthday'], tolkien_birthday.toISOString())
 
   const author_row = db.author.get({ id: tolkien_insert.last_insert_row_id })
   expect_type<{ id: number; first_name: string | null; last_name: string } | undefined>(author_row)

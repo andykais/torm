@@ -120,7 +120,7 @@ class JsonFieldDefinition<T extends Json> extends FieldDefinitionBase<T, string>
 }
 
 class DateTimeFieldDefinition extends FieldDefinitionBase<Date, string> {
-  encode: ZodFn<Date, string> = z.date().transform(val => val.toString()).parse
+  encode: ZodFn<Date, string> = z.date().transform(val => val.toISOString()).parse
   decode: ZodFn<string, Date> = z.string().transform(val => new Date(val)).parse
 }
 
