@@ -81,7 +81,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
   db_old.close()
 
   const db_old_with_current_migration = new BookORM(db_1_0_0, {migrations})
-  db_old_with_current_migration.init({auto_migrate: false})
+  db_old_with_current_migration.init({migrate: {auto: false}})
   db_old_with_current_migration.migrations.validate()
   await db_old_with_current_migration.init()
   db_old_with_current_migration.close()

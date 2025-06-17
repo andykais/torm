@@ -35,6 +35,7 @@
  */
 
 import * as sqlite3 from 'node:sqlite'
+import * as path from 'node:path'
 import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase } from '../src/model.ts'
@@ -335,6 +336,38 @@ class Torm extends TormBase<sqlite3.DatabaseSync> {
 
   public close_driver() {
     this.driver.close()
+  }
+
+  public override backup(folder: string, name: string) {
+    const backup_name = this.get_backup_name(folder, name)
+    const backup_path = path.join(folder, backup_name)
+    Deno.mkdirSync(folder, {recursive: true})
+    try {
+      this.driver.exec(`PRAGMA locking_mode = EXCLUSIVE`)
+      Deno.copyFileSync(this.db_path, backup_path)
+    } finally {
+      this.driver.exec(`PRAGMA locking_mode = NORMAL`)
+    }
+  }
+
+  private get_backup_name(folder: string, name: string, suffix?: number): string {
+    const now = new Date()
+    let backup_name = `${now.getUTCFullYear()}-${now.getUTCMonth().toString().padStart(2, '0')}-${now.getUTCDay().toString().padStart(2, '0')}_${name}`
+    if (suffix) {
+      backup_name += '_' + suffix
+    }
+    try {
+      const backup_path = path.join(folder, backup_name)
+      Deno.statSync(backup_path)
+      suffix = (suffix ?? 0) + 1
+      return this.get_backup_name(folder, name, suffix)
+    } catch (e) {
+      if (e instanceof Deno.errors.NotFound) {
+        return backup_name
+      } else {
+        throw e
+      }
+    }
   }
 
   protected schemas_class = SchemasModelImpl

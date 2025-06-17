@@ -2,9 +2,16 @@ import type { Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
 import { ModelBase } from './model.ts'
 import { MigrationsManager, MigrationRegistry } from './migration.ts';
+import path from "node:path";
 
 interface InitOptions {
-  auto_migrate?: boolean
+  migrate?: {
+    auto?: boolean
+    backup?: boolean
+  }
+  backups?: {
+    folder: string
+  }
 }
 
 interface TableRow {
@@ -45,6 +52,7 @@ abstract class TormBase<D extends Driver> {
   private migrations_manager: MigrationsManager
   private model_class_registry: ModelClass[] = []
   private model_registry: ModelInstance[] = []
+  protected options: TormOptionsInternal
 
   /**
     * Register a model in torm. Any queries registered under that model will be prepared during initialization
@@ -80,6 +88,7 @@ abstract class TormBase<D extends Driver> {
     // Torm::init can be called multiple times
     const migration_registry = options.migrations ?? new MigrationRegistry()
     this.migrations_manager = new MigrationsManager(this, migration_registry, options.migrations_internal)
+    this.options = options
   }
 
   protected _init(driver: D, options?: InitOptions) {
@@ -87,8 +96,8 @@ abstract class TormBase<D extends Driver> {
 
     this._driver = driver
 
-    const { auto_migrate = true } = options ?? {}
-
+    const auto_migrate = options?.migrate?.auto ?? true
+    const backup_before_migrate = options?.migrate?.backup ?? false
 
     this.schemas.prepare_queries(driver)
 
@@ -103,6 +112,13 @@ abstract class TormBase<D extends Driver> {
       if (auto_migrate) {
         while (this.migrations_manager.is_database_outdated()) {
           this.status = 'outdated'
+          if (backup_before_migrate) {
+            if (!options?.backups?.folder) {
+              throw new Error(`backups_folder must be defined in order to use automatic backups`)
+            }
+            const current_version = this.schemas.version()
+            this.backup(options.backups.folder, `migration_from_${current_version}`)
+          }
           this.migrations_manager.upgrade_database()
         }
         this.initialize_models()
@@ -118,6 +134,8 @@ abstract class TormBase<D extends Driver> {
       this.initialize_models()
     }
   }
+
+  public abstract backup(folder: string, name: string): void
 
   private initialize_models = () => {
     for (const model of this.model_registry) {

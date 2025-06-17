@@ -1,5 +1,6 @@
 import { test, assert_equals } from './util.ts'
 import { Model, Torm, Migration, SeedMigration, MigrationRegistry, field, schema } from '../drivers/sqlite.ts'
+import path from "node:path";
 
 
 class Author extends Model {
@@ -179,13 +180,13 @@ test('manual migration', async (ctx) => {
   const tables_new = db_new.schemas.tables()
 
   const db_old = new BookORM(db_old_path, {migrations})
-  await db_old.init({ auto_migrate: false })
+  await db_old.init({ migrate: {auto: false} })
   assert_equals('1.0.0', db_old.schemas.version())
   assert_equals(true, db_old.migrations.is_database_outdated())
   db_old.migrations.upgrade_database()
   assert_equals('1.2.0', db_old.schemas.version())
   assert_equals(false, db_old.migrations.is_database_outdated())
-  db_old.init({ auto_migrate: false }) // a second call will initialize models. TODO maybe add an "init_only: true" flag
+  db_old.init({ migrate: {auto: false} }) // a second call will initialize models. TODO maybe add an "init_only: true" flag
 
   assert_equals([{
     id: 1,
@@ -218,4 +219,50 @@ test('manual migration', async (ctx) => {
 
   db_new.close()
   db_old.close()
+})
+
+test('migration with backups', async (ctx) => {
+  const db_old_path = ctx.create_fixture_path('migrations_1.0.0.db')
+  await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
+
+  const db_old = new BookORM(db_old_path, {migrations})
+  const backups_folder = ctx.create_fixture_path('backups')
+  await db_old.init({
+    backups: { folder: backups_folder },
+    migrate: { auto: true, backup: true }
+  })
+  assert_equals('1.2.0', db_old.schemas.version())
+
+  const backups = await Array.fromAsync(Deno.readDir(backups_folder))
+  assert_equals(backups.length, 1)
+  const now = new Date()
+  const backup_name = `${now.getUTCFullYear()}-${now.getUTCMonth().toString().padStart(2, '0')}-${now.getUTCDay().toString().padStart(2, '0')}_migration_from_1.0.0`
+  assert_equals(backups[0].name, backup_name)
+
+  db_old.close()
+
+  const db_backup_1 = new BookORM(path.join(backups_folder, backups[0].name), {migrations})
+  // now lets disable auto migrations
+  db_backup_1.init({
+    backups: {folder: backups_folder},
+    migrate: {auto: false, backup: true},
+  })
+  assert_equals(db_backup_1.schemas.version(), '1.0.0')
+  db_backup_1.close()
+
+  // lets try backing up again (which would create a name conflict) and see a second file created
+  await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
+  const db_old_2 = new BookORM(db_old_path, {migrations})
+  await db_old.init({
+    backups: {folder: backups_folder},
+    migrate: { auto: true, backup: true }
+  })
+  assert_equals('1.2.0', db_old.schemas.version())
+  db_old_2.close()
+
+  const backups_2 = await Array.fromAsync(Deno.readDir(backups_folder))
+  assert_equals(backups_2.length, 2)
+  const backup_name_2 = backup_name + '_1' // duplicate names get a "_<n>" suffix
+  assert_equals(backups_2[0].name, backup_name)
+  assert_equals(backups_2[1].name, backup_name_2)
 })
