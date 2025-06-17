@@ -2,7 +2,6 @@ import type { Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
 import { ModelBase } from './model.ts'
 import { MigrationsManager, MigrationRegistry } from './migration.ts';
-import path from "node:path";
 
 interface InitOptions {
   migrate?: {
