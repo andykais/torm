@@ -1,6 +1,6 @@
 {
   "name": "@torm/sqlite",
-  "version": "1.6.1",
+  "version": "1.7.0",
 
   "tasks": {
     "test":       "deno test --check --import-map=test/import_map.json --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME,DENO_SQLITE_PATH,DENO_SQLITE_LOCAL --allow-net test",
