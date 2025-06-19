@@ -21,7 +21,7 @@ test('upgrade migration versions must not exceed the seed migration version', ()
   const migrations = new MigrationRegistry()
   @migrations.register()
   class InitBookMigration1 extends SeedMigration {
-    version = '1.0.0'
+    version = 1
 
     call = () => this.driver.exec(`CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,
@@ -32,7 +32,7 @@ test('upgrade migration versions must not exceed the seed migration version', ()
   assert_throws(() => {
     @migrations.register()
     class AccidentalFutureMigration extends Migration {
-      version = '1.2.0'
+      version = 1.2
       call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
     }
   }, MigrationValidationError)
@@ -50,7 +50,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
 
   @migrations.register()
   class InitBookMigration2 extends SeedMigration {
-    version = '1.2.0'
+    version = 1.2
 
     table_sql = `CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,
@@ -63,7 +63,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
 
   @migrations.register()
   class AddGenreMigration extends Migration {
-    version = '1.1.0'
+    version = 1.1
     call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN genre TEXT`)
   }
 
@@ -74,7 +74,7 @@ test('newest upgrade version must match seed migrations version', async (ctx) =>
   // adding in our migration to the latest version will now work
   @migrations.register()
   class AddPageCountMigration extends Migration {
-    version = '1.2.0'
+    version = 1.2
     call = () => this.driver.exec(`ALTER TABLE book ADD COLUMN page_count TEXT`)
   }
 
@@ -97,7 +97,7 @@ test('fresh dbs should not touch upgrade migrations', async (ctx) => {
 
   @migrations.register()
   class InitBookMigration extends SeedMigration {
-    version = '1.2.0'
+    version = 1.2
 
     create_table = this.query`CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,
@@ -111,7 +111,7 @@ test('fresh dbs should not touch upgrade migrations', async (ctx) => {
 
   @migrations.register()
   class AddGenreMigration extends Migration {
-    version = '1.2.0'
+    version = 1.2
     call = () => { throw new Error('do not take this codepath') }
   }
 

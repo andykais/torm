@@ -42,7 +42,7 @@ class BookORM extends Torm {
 const migrations = new MigrationRegistry()
 @migrations.register()
 class AuthorSeedMigration extends SeedMigration {
-  version = '1.0.0'
+  version = 1
 
   call = () => this.prepare`
     CREATE TABLE IF NOT EXISTS author (
@@ -57,7 +57,7 @@ class AuthorSeedMigration extends SeedMigration {
 
 @migrations.register()
 class BookSeedMigration extends SeedMigration {
-  version = '1.0.0'
+  version = 1
 
   call = () => this.driver.exec(`
     CREATE TABLE book (

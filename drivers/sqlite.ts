@@ -41,7 +41,7 @@ import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
 import { TormBase, type SchemasModel, type InitOptions, type TormOptions } from '../src/torm.ts'
-import { MigrationBase, MigrationRegistry, SeedMigrationBase } from '../src/migration.ts'
+import { MigrationBase, MigrationRegistry, SeedMigrationBase, type Version } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
 import * as errors from '../src/errors.ts'
 
@@ -195,7 +195,7 @@ class SqliteMasterModel extends Model {
 
 @migrations_internal.register()
 class InitializeTormMetadata extends SeedMigration {
-  version = '0.1.0'
+  version = 1
   call(driver?: sqlite3.DatabaseSync) {
     if (!driver) throw new Error('Cannot initialize torm metadata without passing driver')
     driver.exec(`
@@ -215,19 +215,21 @@ interface SchemaTable {
   table_schema: string
 }
 const torm_metadata_schema = schema('__torm_metadata__', {
-  version: field.string(),
+  version: field.number(),
   updated_at: field.datetime(),
   created_at: field.datetime(),
 })
 class SchemasModelImpl extends Model implements SchemasModel {
   private _tables = this.query`SELECT ${SqliteMasterModel.schema.result['*']} FROM sqlite_master ORDER BY name`
 
-  unsafe_version_set(version: string) {
+  unsafe_version_set(version: Version) {
     this.prepare`UPDATE __torm_metadata__ SET version = ${torm_metadata_schema.params.version}`.exec({ version })
   }
 
-  version(): string {
-    return this.prepare`SELECT ${torm_metadata_schema.result.version} FROM __torm_metadata__`.one({})!.version
+  version(): Version {
+    const version_raw = this.prepare`SELECT ${torm_metadata_schema.result.version} FROM __torm_metadata__`.one({})!.version
+    // NOTE that we only parseFloat here because historically we used semver here (before anyone besides me ever used this, and I don't want to convert all my database initial seed versions to numbers manually)
+    return parseFloat(version_raw as any)
   }
 
   table(table_name: string): SchemaTable | undefined {

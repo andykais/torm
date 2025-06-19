@@ -1,7 +1,7 @@
 import type { Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
 import { ModelBase } from './model.ts'
-import { MigrationsManager, MigrationRegistry } from './migration.ts';
+import { MigrationsManager, MigrationRegistry, type Version } from './migration.ts';
 
 interface InitOptions {
   migrate?: {
@@ -19,12 +19,12 @@ interface TableRow {
 }
 abstract class SchemasModel extends ModelBase {
   /** @internal */
-  abstract unsafe_version_set(version: string): void
+  abstract unsafe_version_set(version: Version): void
 
   /**
     * Returns the current migration version of the database
     */
-  abstract version(): string
+  abstract version(): Version
   /**
     * Returns table information a particular table
     */
@@ -116,7 +116,7 @@ abstract class TormBase<D extends Driver> {
               throw new Error(`backups_folder must be defined in order to use automatic backups`)
             }
             const current_version = this.schemas.version()
-            this.backup(options.backups.folder, `migration_from_${current_version}`)
+            this.backup(options.backups.folder, `migration_backup_v${current_version}`)
           }
           this.migrations_manager.upgrade_database()
         }

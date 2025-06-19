@@ -30,7 +30,7 @@ class BookORM extends Torm {
 const migrations = new MigrationRegistry()
 @migrations.register()
 class BookMigration extends SeedMigration {
-  version = '1.0.0'
+  version = 1
   call = () => this.prepare`
     CREATE TABLE book (
       id INTEGER NOT NULL PRIMARY KEY,

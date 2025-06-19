@@ -1,4 +1,3 @@
-import * as semver from '@std/semver'
 import { ModelBase } from './model.ts'
 import { StaticRegistry } from './static_registry_decorator.ts'
 import { MigrationValidationError, MigrationError } from './errors.ts'
@@ -6,7 +5,7 @@ import type { Driver } from './util.ts'
 import type { TormBase } from './torm.ts'
 
 
-type Version = string
+type Version = number
 
 
 class MigrationRegistry extends StaticRegistry<MigrationClass> {
@@ -31,28 +30,28 @@ class MigrationRegistry extends StaticRegistry<MigrationClass> {
       // typescript briefly did it differently, letting static props be accessed by class decorators
       // typescript is now better aligned with tc39, and this is busted.
       // Migration::version needs to be moved to an instantiated property and the whole class needs to be instantiated earlier
-      if (!semver.canParse(migration.version)) {
-        throw new MigrationValidationError(`Migrations must define a static version property. Migration\n${migration.constructor.name}\ndefined ${migration.version}`)
+      if (typeof migration.version !== 'number') {
+        throw new MigrationValidationError(`Migrations must define a static numeric version property. Migration\n${migration.constructor.name}\ndefined ${migration.version}`)
       }
 
       if (prev_migration) {
-        const prev_version = semver.parse(prev_migration.version)
-        const current_version = semver.parse(migration.version)
+        const prev_version = prev_migration.version
+        const current_version = migration.version
 
         if (prev_migration.is_seed_migration()) {
           if (migration.is_seed_migration()) {
-            if (!semver.equals(prev_version, current_version)) {
+            if (prev_version !== current_version) {
               const seed_migrations = migration_registry.map(m => `${m.constructor.name}: "${m.version}"`).join(',')
               throw new MigrationValidationError(`All seed migrations must keep the same version. Seed migrations: [${seed_migrations}]`)
             }
           } else {
-            if (semver.lessThan(prev_version, current_version)) {
+            if (prev_version < current_version) {
               throw new MigrationValidationError(`Seed migrations have version ${prev_migration.version}. Upgrade migrations versions must not exceed the seed migration version. ${migration} fails this check.`)
             }
           }
 
         } else {
-          if (!semver.lessOrEqual(prev_version, current_version)) {
+          if (prev_version > current_version) {
             throw new MigrationValidationError(`Migrations must be registered in order.\n${migration}\nversion is less than\n${prev_migration}`)
           }
         }
@@ -122,9 +121,9 @@ class MigrationsManager {
   public is_database_outdated(): boolean {
     if (this.#application_version === undefined) return false
     else {
-      const current_version = semver.parse(this.#torm.schemas.version())
-      const application_version = semver.parse(this.#application_version)
-      return semver.lessThan(current_version, application_version)
+      const current_version = this.#torm.schemas.version()
+      const application_version = this.#application_version
+      return current_version < application_version
     }
   }
 
@@ -135,36 +134,33 @@ class MigrationsManager {
   public upgrade_database() {
     if (this.#application_version === undefined) throw new Error('Cannot upgrade database. Declared version is undefined.')
 
-    const current_version = semver.parse(this.#torm.schemas.version())
-    const application_version = semver.parse(this.#application_version)
-    const migration_map: Record<Version, MigrationInstance[]> = {}
+    const current_version = this.#torm.schemas.version()
+    const application_version = this.#application_version
+    const migration_map = new Map<Version, MigrationInstance[]>
     for (const migration of this.#migrations.upgrades) {
-      migration_map[migration.version] ??= []
-      migration_map[migration.version].push(migration)
+      const version_migrations = migration_map.get(migration.version) ?? []
+      migration_map.set(migration.version, version_migrations)
+      version_migrations.push(migration)
     }
-    const upgrade_versions = Object.keys(migration_map).map(version => {
-      return { version: semver.parse(version), version_str: version }
-    })
-    upgrade_versions.sort((a, b) => {
-      return semver.compare(a.version, b.version)
-    })
-    if (upgrade_versions.some(v => semver.greaterThan(v.version, application_version))) {
+    const upgrade_versions = Array.from(migration_map.keys())
+    upgrade_versions.sort((a, b) => a - b)
+    if (upgrade_versions.some(version => version > application_version)) {
       throw new Error(`Declared migrations include version ${upgrade_versions} that exceeds declared current torm version ${this.#application_version}`)
     }
-    const next_version = upgrade_versions.find(v => semver.greaterThan(v.version, current_version))
+    const next_version = upgrade_versions.find(version => version > current_version)
     if (next_version === undefined) throw new Error('No new version exists. Database is up to date')
     // TODO put a transaction around this block
-    for (const migration of migration_map[next_version.version_str]) {
+    for (const migration of migration_map.get(next_version)!) {
       migration.prepare_queries()
       migration.call()
     }
-    this.#torm.schemas.unsafe_version_set(next_version.version_str)
+    this.#torm.schemas.unsafe_version_set(next_version)
   }
 
   public validate() {
     if (this.#application_version === undefined) throw new Error('Misconfigured migration: expected a configured application version, found undefined')
 
-    const application_version = semver.parse(this.#application_version)
+    const application_version = this.#application_version
 
     for (const migration of this.#migrations.initialization) {
       if (migration.version !== this.#application_version) {
@@ -174,8 +170,8 @@ class MigrationsManager {
 
     if (this.#migrations.upgrades.length) {
       const last_migration = this.#migrations.upgrades.at(-1)!
-      const last_migration_version = semver.parse(last_migration.version)
-      if (!semver.equals(last_migration_version, application_version)) {
+      const last_migration_version = last_migration.version
+      if (last_migration_version !== application_version) {
         throw new MigrationValidationError(`The newest upgrade migration version (${last_migration.version}) must match the current application version (${this.#application_version})`)
       }
     }
@@ -183,10 +179,10 @@ class MigrationsManager {
     if (this.#migrations.upgrades.length > 0) {
       let at_least_one_current_migration = false
       for (const migration of this.#migrations.upgrades) {
-        const migration_version = semver.parse(migration.version)
-        if (semver.equals(migration_version, application_version)) {
+        const migration_version = migration.version
+        if (migration_version === application_version) {
           at_least_one_current_migration = true
-        } else if (semver.greaterThan(migration_version, application_version)) {
+        } else if (migration_version > application_version) {
           throw new MigrationValidationError(`Misconfigured migration: ${migration.constructor.name} upgrade migration version ${migration.version} is greater than defined application version ${this.#application_version}`)
         }
       }
@@ -223,7 +219,7 @@ interface MigrationInstance extends ModelBase {
 }
 
 abstract class MigrationBase extends ModelBase implements MigrationInstance {
-  public abstract version: string
+  public abstract version: Version
   public abstract call(driver?: Driver): void
 
   public is_seed_migration(): boolean {

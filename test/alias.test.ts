@@ -41,7 +41,7 @@ const migrations = new MigrationRegistry()
 
 @migrations.register()
 class TagInitMigration extends SeedMigration {
-  version = '1.0.0'
+  version = 1
 
   call = () => this.prepare`
     CREATE TABLE tag_group (
@@ -53,7 +53,7 @@ class TagInitMigration extends SeedMigration {
 
 @migrations.register()
 class TagGroupInitMigration extends SeedMigration {
-  version = '1.0.0'
+  version = 1
 
   call = () => this.prepare`
     CREATE TABLE tag (
