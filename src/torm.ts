@@ -45,6 +45,13 @@ export interface TormOptionsInternal extends TormOptions {
   migrations_internal: MigrationRegistry
 }
 
+
+export interface TormInitInfo {
+  current_version: Version
+  migration_operations: MigrationOperation[]
+}
+
+
 abstract class TormBase<D extends Driver> {
   private status: 'uninitialized' | 'outdated' | 'initialized' = 'uninitialized'
   private _driver: D | null = null
@@ -90,7 +97,7 @@ abstract class TormBase<D extends Driver> {
     this.options = options
   }
 
-  protected _init(driver: D, options?: InitOptions) {
+  protected _init(driver: D, options?: InitOptions): TormInitInfo {
     const thisConstructor = this.constructor as typeof TormBase<Driver>
 
     this._driver = driver

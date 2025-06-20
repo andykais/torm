@@ -138,7 +138,7 @@ class MigrationsManager {
     return this.#torm.schemas.table('__torm_metadata__') === undefined
   }
 
-  public upgrade_database() {
+  public upgrade_database(): Version {
     if (this.#application_version === undefined) throw new Error('Cannot upgrade database. Declared version is undefined.')
 
     const current_version = this.#torm.schemas.version()
