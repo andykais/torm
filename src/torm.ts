@@ -50,7 +50,7 @@ export interface TormOptionsInternal extends TormOptions {
 }
 
 
-export interface TormInitInfo {
+export interface InitInfo {
   /** The version the database is currently at */
   current_version: Version
 
@@ -104,7 +104,7 @@ abstract class TormBase<D extends Driver> {
     this.options = options
   }
 
-  protected _init(driver: D, options?: InitOptions): TormInitInfo {
+  protected _init(driver: D, options?: InitOptions): InitInfo {
     const thisConstructor = this.constructor as typeof TormBase<Driver>
 
     this._driver = driver

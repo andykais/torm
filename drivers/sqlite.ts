@@ -40,7 +40,7 @@ import type { OptionalOnEmpty } from '../src/util.ts'
 import { Vars, schema, type SchemaGeneric } from '../src/schema.ts'
 import { ModelBase } from '../src/model.ts'
 import { StatementBase, type RawRowData } from '../src/statement.ts'
-import { TormBase, type SchemasModel, type InitOptions, type TormOptions, type TormInitInfo } from '../src/torm.ts'
+import { TormBase, type SchemasModel, type InitOptions, type TormOptions, type InitInfo } from '../src/torm.ts'
 import { MigrationBase, MigrationRegistry, SeedMigrationBase, type Version } from '../src/migration.ts'
 import { field } from '../src/mod.ts'
 import * as errors from '../src/errors.ts'
@@ -329,7 +329,7 @@ class Torm extends TormBase<sqlite3.DatabaseSync> {
     this.sqlite_options = {readOnly: false, ...this.sqlite_options}
   }
 
-  public init(options?: InitOptions): TormInitInfo {
+  public init(options?: InitOptions): InitInfo {
     const driver = new sqlite3.DatabaseSync(this.db_path, this.sqlite_options)
     return this._init(driver, options)
   }
@@ -392,4 +392,4 @@ export { schema }
 export { MigrationError, MigrationValidationError, MigrationRegistry } from '../src/migration.ts'
 export type { InferSchemaTypes, SchemaFieldGeneric } from '../src/schema.ts'
 export type { SchemaGeneric as Fields }
-export type { TormOptions, TormInitInfo }
+export type { TormOptions, InitOptions, InitInfo }
