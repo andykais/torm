@@ -1,7 +1,7 @@
 import type { Driver } from './util.ts'
 import type { ModelClass, ModelInstance } from './model.ts'
 import { ModelBase } from './model.ts'
-import { MigrationsManager, MigrationRegistry, type Version } from './migration.ts';
+import { MigrationsManager, MigrationRegistry, type Version, type MigrationOperation } from './migration.ts';
 
 interface InitOptions {
   migrate?: {
@@ -101,6 +101,7 @@ abstract class TormBase<D extends Driver> {
     this.schemas.prepare_queries(driver)
 
     const application_version = this.migrations_manager.application_version()
+    const migration_operations: MigrationOperation[] = []
 
     if (application_version !== undefined) {
       this.migrations_manager.validate()
@@ -111,14 +112,22 @@ abstract class TormBase<D extends Driver> {
       if (auto_migrate) {
         while (this.migrations_manager.is_database_outdated()) {
           this.status = 'outdated'
+          const current_version = this.schemas.version()
+          const migration_operation: MigrationOperation = {
+            start_version: current_version,
+            backup: false,
+            next_version: -1,
+          }
           if (backup_before_migrate) {
             if (!options?.backups?.folder) {
               throw new Error(`backups_folder must be defined in order to use automatic backups`)
             }
-            const current_version = this.schemas.version()
+            migration_operation.backup = true
             this.backup(options.backups.folder, `migration_backup_v${current_version}`)
           }
-          this.migrations_manager.upgrade_database()
+          const next_version = this.migrations_manager.upgrade_database()
+          migration_operation.next_version = next_version
+          migration_operations.push(migration_operation)
         }
         this.initialize_models()
       }
@@ -131,6 +140,11 @@ abstract class TormBase<D extends Driver> {
       }
     } else {
       this.initialize_models()
+    }
+
+    return {
+      current_version: this.schemas.version(),
+      migration_operations,
     }
   }
 

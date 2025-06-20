@@ -75,7 +75,6 @@ class BookSeedMigration extends SeedMigration {
 
 
 
-// skipping this test for now until deno's node:sqlite implements unique constraint errors https://github.com/denoland/deno/issues/28289
 test('exceptions', async (ctx) => {
   const db = new BookORM(ctx.create_fixture_path('usage.db'), {migrations})
   await db.init()

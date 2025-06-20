@@ -147,14 +147,22 @@ BookORM.migrations.upgrades.push(Migration.create('1.2.0', 'ALTER TABLE book ADD
 
 
 test('auto migration', async (ctx) => {
-  const db_new: BookORM | undefined = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
+  const db_new = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
   await db_new.init()
   assert_equals(1.2, db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
 
-  const db_old = new BookORM(ctx.create_fixture_path('migrations_1.0.0.db'), {migrations})
-  await db_old.init()
+  const db_old_path = ctx.create_fixture_path('migrations_1.0.0.db')
+  await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
+  const db_old = new BookORM(db_old_path, {migrations})
+  const init_info = await db_old.init()
+  assert_equals([{
+    start_version: 1,
+    backup: false,
+    next_version: 1.2
+  }], init_info.migration_operations)
   assert_equals(1.2, db_old.schemas.version())
+  assert_equals(1.2, init_info.current_version)
   const tables_old = db_old.schemas.tables()
 
   assert_equals(tables_new, tables_old)
@@ -174,7 +182,7 @@ test('manual migration', async (ctx) => {
   const db_old_path = ctx.create_fixture_path('migrations_1.0.0.db')
   await Deno.copyFile(ctx.resources.books_db_1_0_0, db_old_path)
 
-  const db_new = new BookORM('test/fixtures/migrations.db', {migrations})
+  const db_new = new BookORM(ctx.create_fixture_path('migrations.db'), {migrations})
   await db_new.init()
   assert_equals(1.2, db_new.schemas.version())
   const tables_new = db_new.schemas.tables()
@@ -227,11 +235,16 @@ test('migration with backups', async (ctx) => {
 
   const db_old = new BookORM(db_old_path, {migrations})
   const backups_folder = ctx.create_fixture_path('backups')
-  await db_old.init({
+  const info = await db_old.init({
     backups: { folder: backups_folder },
     migrate: { auto: true, backup: true }
   })
   assert_equals(1.2, db_old.schemas.version())
+  assert_equals([{
+    start_version: 1,
+    backup: true,
+    next_version: 1.2,
+  }], info.migration_operations)
 
   const backups = await Array.fromAsync(Deno.readDir(backups_folder))
   assert_equals(backups.length, 1)

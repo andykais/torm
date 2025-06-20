@@ -8,6 +8,13 @@ import type { TormBase } from './torm.ts'
 type Version = number
 
 
+export interface MigrationOperation {
+  start_version: Version
+  next_version: Version
+  backup: boolean
+}
+
+
 class MigrationRegistry extends StaticRegistry<MigrationClass> {
   #validation_registry: MigrationInstance[] = []
 
@@ -155,6 +162,8 @@ class MigrationsManager {
       migration.call()
     }
     this.#torm.schemas.unsafe_version_set(next_version)
+
+    return next_version
   }
 
   public validate() {

@@ -332,8 +332,7 @@ class Torm extends TormBase<sqlite3.DatabaseSync> {
   // deno-lint-ignore require-await
   public async init(options?: InitOptions) {
     const driver = new sqlite3.DatabaseSync(this.db_path, this.sqlite_options)
-    this._init(driver, options)
-    this.schemas.version()
+    return this._init(driver, options)
   }
 
   public close_driver() {
