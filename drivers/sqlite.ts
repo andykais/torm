@@ -392,3 +392,4 @@ export { schema }
 export { MigrationError, MigrationValidationError, MigrationRegistry } from '../src/migration.ts'
 export type { InferSchemaTypes, SchemaFieldGeneric } from '../src/schema.ts'
 export type { SchemaGeneric as Fields }
+export type { TormOptions, TormInitInfo }

@@ -4,10 +4,14 @@ import { ModelBase } from './model.ts'
 import { MigrationsManager, MigrationRegistry, type Version, type MigrationOperation } from './migration.ts';
 
 interface InitOptions {
+  /** Options controlling migration behavior */
   migrate?: {
+    /** Whether or not torm should automatically migrate up to the latest seed migration version */
     auto?: boolean
+    /** Whether or not a backup should be made of the database before each migration */
     backup?: boolean
   }
+  /** The location of the backups */
   backups?: {
     folder: string
   }
@@ -47,7 +51,10 @@ export interface TormOptionsInternal extends TormOptions {
 
 
 export interface TormInitInfo {
+  /** The version the database is currently at */
   current_version: Version
+
+  /** Any operations performed to upgrade the database. This field only populates when {@link InitOptions.migration.auto} is true */
   migration_operations: MigrationOperation[]
 }
 

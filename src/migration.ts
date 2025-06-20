@@ -9,8 +9,11 @@ type Version = number
 
 
 export interface MigrationOperation {
+  /** The migration version before the operation */
   start_version: Version
+  /** The migration version after the operation */
   next_version: Version
+  /** Whether or not a backup was performed before the migration (controlled via InitOptions.migrate.backup) */
   backup: boolean
 }
 
