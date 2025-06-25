@@ -162,7 +162,7 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
           decoded_object[field] = field_definition.call_decode(output_object[field])
         }
       } else {
-        decoded_object[field] = field_definition.call_decode(output_object[field])
+        decoded_object[field] = (field_definition.call_decode as any)(output_object[field])
       }
     }
     return decoded_object
