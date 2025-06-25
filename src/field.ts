@@ -14,6 +14,9 @@ export interface FieldDefinition<In, Out extends ColumnValue> {
   encode: (val: In) => Out
   decode?: (val: Out) => In
 
+  encode_document: (val: In) => any
+  decode_document: (val: Out) => any
+
   call_encode: (val: In) => Out
   call_decode: (val: Out) => In
 }
@@ -48,6 +51,13 @@ abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements Field
   public abstract encode: (val: In) => Out
   public abstract decode?: (val: Out) => In
 
+  public encode_document(val: In): any {
+    return this.encode(val)
+  }
+  public decode_document(val: Out): any {
+    return this.decode ? this.decode(val) : val
+  }
+
   public call_encode(val: In): Out {
     return this.encode(val)
   }
@@ -62,6 +72,16 @@ abstract class FieldDefinitionBase<In, Out extends ColumnValue> implements Field
 class OptionalField<In, Out extends ColumnValue> extends FieldDefinitionBase<In | null, Out | null> {
   public constructor(private field_definition: FieldDefinition<In, Out>) {
     super()
+  }
+
+  public override encode_document(val: In | null | undefined): any | null {
+    if (val === null || val === undefined) return null
+    else return this.field_definition.encode_document(val)
+  }
+
+  public override decode_document(val: Out | null): In | null {
+    if (val === null) return null
+    else return this.field_definition.decode_document(val)
   }
 
   public encode = (val: In | null | undefined): Out | null => {
@@ -130,52 +150,44 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
     super()
   }
 
-  encode_object(val: T): Record<string, any> {
+  public override encode_document(val: T): Record<string, any> {
     const input_object = z.object({}).passthrough().parse(val) as Record<string, any>
     const encoded_object: Record<string, any> = {}
     for (const [field, field_definition] of Object.entries(this.schema)) {
-      if (field_definition instanceof SchemaFieldDefinition) {
-        encoded_object[field] = field_definition.encode_object(input_object[field])
-      } else if (field_definition instanceof ListFieldDefinition) {
-        encoded_object[field] = field_definition.encode_list(input_object[field])
-      } else if (field_definition instanceof OptionalField) {
+      if (field_definition instanceof OptionalField) {
         if (field in input_object) {
-          encoded_object[field] = (field_definition.encode as any)(input_object[field])
+          encoded_object[field] = field_definition.encode_document(input_object[field])
         }
       } else {
-        encoded_object[field] = (field_definition.encode as any)(input_object[field])
+        encoded_object[field] = (field_definition.encode_document as any)(input_object[field])
       }
     }
     return encoded_object
   }
 
-  decode_object(val: any): Record<string, any> {
+  public override decode_document(val: any): Record<string, any> {
     const output_object = z.object({}).passthrough().parse(val) as Record<string, any>
     const decoded_object: Record<string, any> = {}
     for (const [field, field_definition] of Object.entries(this.schema)) {
-      if (field_definition instanceof SchemaFieldDefinition) {
-        decoded_object[field] = field_definition.decode_object(output_object[field])
-      } else if (field_definition instanceof ListFieldDefinition) {
-        decoded_object[field] = field_definition.decode_list(output_object[field])
-      } else if (field_definition instanceof OptionalField) {
+      if (field_definition instanceof OptionalField) {
         if (field in output_object) {
-          decoded_object[field] = field_definition.call_decode(output_object[field])
+          decoded_object[field] = field_definition.decode_document(output_object[field])
         }
       } else {
-        decoded_object[field] = (field_definition.call_decode as any)(output_object[field])
+        decoded_object[field] = (field_definition.decode_document as any)(output_object[field])
       }
     }
     return decoded_object
   }
 
   encode = (val: T): string => {
-    const encoded_object = this.encode_object(val)
+    const encoded_object = this.encode_document(val)
     return JSON.stringify(encoded_object)
   }
 
   decode = (val: string): T => {
     const output_object = JSON.parse(val)
-    const decoded_object = this.decode_object(output_object)
+    const decoded_object = this.decode_document(output_object)
     return decoded_object as any
   }
 }
@@ -185,11 +197,11 @@ class ListFieldDefinition<T> extends FieldDefinitionBase<T[], string> {
     super()
   }
 
-  encode_list(val: T[]): Array<any> {
+  public override encode_document(val: T[]): Array<any> {
     const input_array = z.array(z.any()).parse(val) as Array<any>
     const encoded_array = input_array.map(item => {
       if (this.field_definition instanceof SchemaFieldDefinition) {
-        return this.field_definition.encode_object(item)
+        return this.field_definition.encode_document(item)
       } else {
         return this.field_definition.call_encode(item)
       }
@@ -197,11 +209,11 @@ class ListFieldDefinition<T> extends FieldDefinitionBase<T[], string> {
     return encoded_array
   }
 
-  decode_list(val: any): Array<any> {
+  public override decode_document(val: any): Array<any> {
     const output_array = z.array(z.any()).parse(val)
     const decoded_array = output_array.map(item => {
       if (this.field_definition instanceof SchemaFieldDefinition) {
-        return this.field_definition.decode_object(item)
+        return this.field_definition.decode_document(item)
       } else {
         return this.field_definition.call_decode(item)
       }
@@ -210,13 +222,13 @@ class ListFieldDefinition<T> extends FieldDefinitionBase<T[], string> {
   }
 
   encode = (val: T[]): string => {
-    const encoded_array = this.encode_list(val)
+    const encoded_array = this.encode_document(val)
     return JSON.stringify(encoded_array)
   }
 
   decode = (val: string): T[] => {
     const output_array = JSON.parse(val)
-    const decoded_array = this.decode_list(output_array)
+    const decoded_array = this.decode_document(output_array)
     return decoded_array as any
   }
 }
@@ -233,8 +245,6 @@ type SchemaValue =
 interface SchemaDefinition {
   [field: string]: SchemaValue
 }
-
-type ListDefinition = Array<SchemaValue>
 
 type SchemaInput<T extends SchemaDefinition> = OptionalKeys<{
   [K in keyof T]: FieldInput<T[K]>

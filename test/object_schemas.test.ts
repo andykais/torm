@@ -23,6 +23,9 @@ class Person extends Model {
         foobar: field.string(),
         a_date: field.datetime().optional(),
         metadata: field.json().optional(),
+        optional_list_1: field.list(field.string()).optional(),
+        optional_list_2: field.list(field.string()).default([]),
+        optional_list_3: field.list(field.string()).optional(),
       })
     })
   })
@@ -42,13 +45,13 @@ const migrations = new MigrationRegistry()
 class ORMSeedMigration extends SeedMigration {
   version = 1
 
-  call = () => this.prepare`
+  call = () => this.driver.exec(`
     CREATE TABLE person (
       id INTEGER NOT NULL PRIMARY KEY,
       name TEXT NOT NULL,
       address TEXT NOT NULL
-    )
-  `.exec()
+    );
+  `)
 }
 
 
@@ -68,7 +71,8 @@ test('schemas should serialize all field types', (ctx) => {
       field_1: 'foo'
     }],
     nested: {
-      foobar: 'foo'
+      foobar: 'foo',
+      optional_list_3: ['foo', 'bar']
     }
   }
   const person_id = db.person.create({
@@ -80,7 +84,11 @@ test('schemas should serialize all field types', (ctx) => {
   assert_equals(person?.name, 'Bob')
   assert_equals(person?.address, {
     ...address,
-    default_2: 'default_val'
+    default_2: 'default_val',
+    nested: {
+      ...address.nested,
+      optional_list_2: [],
+    }
   })
   db.close()
 })
