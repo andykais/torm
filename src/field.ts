@@ -136,6 +136,10 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
     for (const [field, field_definition] of Object.entries(this.schema)) {
       if (field_definition instanceof SchemaFieldDefinition) {
         encoded_object[field] = field_definition.encode_object(input_object[field])
+      } else if (field_definition instanceof OptionalField) {
+        if (field in input_object) {
+          encoded_object[field] = (field_definition.encode as any)(input_object[field])
+        }
       } else {
         encoded_object[field] = (field_definition.encode as any)(input_object[field])
       }
@@ -149,6 +153,10 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
     for (const [field, field_definition] of Object.entries(this.schema)) {
       if (field_definition instanceof SchemaFieldDefinition) {
         decoded_object[field] = field_definition.decode_object(output_object[field])
+      } else if (field_definition instanceof OptionalField) {
+        if (field in output_object) {
+          decoded_object[field] = (field_definition.decode as any)(output_object[field])
+        }
       } else {
         decoded_object[field] = (field_definition.decode as any)(output_object[field])
       }
@@ -180,6 +188,7 @@ type SchemaValue =
 interface SchemaDefinition {
   [field: string]: SchemaValue
 }
+
 type SchemaInput<T extends SchemaDefinition> = OptionalKeys<{
   [K in keyof T]: T[K] extends FieldDefinitionBase<infer In, any> ? In :
     never
