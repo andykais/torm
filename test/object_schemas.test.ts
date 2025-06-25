@@ -11,6 +11,10 @@ class Person extends Model {
       zipcode:    field.number(),
       street:     field.string(),
       updated_at: field.datetime(),
+      list_1:       field.list(field.datetime()),
+      list_2:       field.list(field.schema({
+        field_1: field.string(),
+      })),
       optional_1: field.string().optional(),
       optional_2: field.string().optional(),
       default_1: field.string().default('default_val'),
@@ -59,6 +63,10 @@ test('schemas should serialize all field types', (ctx) => {
     updated_at: new Date(),
     optional_1: 'foo',
     default_1: 'hi',
+    list_1: [new Date()],
+    list_2: [{
+      field_1: 'foo'
+    }],
     nested: {
       foobar: 'foo'
     }

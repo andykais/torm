@@ -136,6 +136,8 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
     for (const [field, field_definition] of Object.entries(this.schema)) {
       if (field_definition instanceof SchemaFieldDefinition) {
         encoded_object[field] = field_definition.encode_object(input_object[field])
+      } else if (field_definition instanceof ListFieldDefinition) {
+        encoded_object[field] = field_definition.encode_list(input_object[field])
       } else if (field_definition instanceof OptionalField) {
         if (field in input_object) {
           encoded_object[field] = (field_definition.encode as any)(input_object[field])
@@ -153,12 +155,14 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
     for (const [field, field_definition] of Object.entries(this.schema)) {
       if (field_definition instanceof SchemaFieldDefinition) {
         decoded_object[field] = field_definition.decode_object(output_object[field])
+      } else if (field_definition instanceof ListFieldDefinition) {
+        decoded_object[field] = field_definition.decode_list(output_object[field])
       } else if (field_definition instanceof OptionalField) {
         if (field in output_object) {
-          decoded_object[field] = (field_definition.decode as any)(output_object[field])
+          decoded_object[field] = field_definition.call_decode(output_object[field])
         }
       } else {
-        decoded_object[field] = (field_definition.decode as any)(output_object[field])
+        decoded_object[field] = field_definition.call_decode(output_object[field])
       }
     }
     return decoded_object
@@ -176,6 +180,46 @@ class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefiniti
   }
 }
 
+class ListFieldDefinition<T> extends FieldDefinitionBase<T[], string> {
+  constructor(private field_definition: FieldDefinition<any, any>) {
+    super()
+  }
+
+  encode_list(val: T[]): Array<any> {
+    const input_array = z.array(z.any()).parse(val) as Array<any>
+    const encoded_array = input_array.map(item => {
+      if (this.field_definition instanceof SchemaFieldDefinition) {
+        return this.field_definition.encode_object(item)
+      } else {
+        return this.field_definition.call_encode(item)
+      }
+    })
+    return encoded_array
+  }
+
+  decode_list(val: any): Array<any> {
+    const output_array = z.array(z.any()).parse(val)
+    const decoded_array = output_array.map(item => {
+      if (this.field_definition instanceof SchemaFieldDefinition) {
+        return this.field_definition.decode_object(item)
+      } else {
+        return this.field_definition.call_decode(item)
+      }
+    })
+    return decoded_array
+  }
+
+  encode = (val: T[]): string => {
+    const encoded_array = this.encode_list(val)
+    return JSON.stringify(encoded_array)
+  }
+
+  decode = (val: string): T[] => {
+    const output_array = JSON.parse(val)
+    const decoded_array = this.decode_list(output_array)
+    return decoded_array as any
+  }
+}
 type SchemaValue =
   | StringFieldDefinition
   | NumberFieldDefinition
@@ -184,14 +228,16 @@ type SchemaValue =
   | OptionalField<any, any>
   | DefaultField<any, any>
   | SchemaFieldDefinition<any>
+  | ListFieldDefinition<any>
 
 interface SchemaDefinition {
   [field: string]: SchemaValue
 }
 
+type ListDefinition = Array<SchemaValue>
+
 type SchemaInput<T extends SchemaDefinition> = OptionalKeys<{
-  [K in keyof T]: T[K] extends FieldDefinitionBase<infer In, any> ? In :
-    never
+  [K in keyof T]: FieldInput<T[K]>
 }>
 
 // field definitions
@@ -201,3 +247,4 @@ export const boolean  = (): BooleanFieldDefinition => new BooleanFieldDefinition
 export const datetime = (): DateTimeFieldDefinition => new DateTimeFieldDefinition()
 export const json     = <T extends Json>(): JsonFieldDefinition<T> => new JsonFieldDefinition()
 export const schema   = <T extends SchemaDefinition>(schema: T): SchemaFieldDefinition<SchemaInput<T>> => new SchemaFieldDefinition(schema)
+export const list     = <T extends FieldDefinition<any, any>>(item: T): ListFieldDefinition<FieldInput<T>> => new ListFieldDefinition(item)
