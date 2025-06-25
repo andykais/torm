@@ -5,6 +5,7 @@
   */
 
 import * as z from 'zod'
+import type { OptionalKeys } from "./util.ts";
 
 // accepted column values (for sqlite, for now)
 type ColumnValue = string | number | bigint | Uint8Array | null;
@@ -124,9 +125,70 @@ class DateTimeFieldDefinition extends FieldDefinitionBase<Date, string> {
   decode: ZodFn<string, Date> = z.string().transform(val => new Date(val)).parse
 }
 
+class SchemaFieldDefinition<T extends Record<string, any>> extends FieldDefinitionBase<T, string> {
+  constructor(private schema: SchemaDefinition) {
+    super()
+  }
+
+  encode_object(val: T): Record<string, any> {
+    const input_object = z.object({}).passthrough().parse(val) as Record<string, any>
+    const encoded_object: Record<string, any> = {}
+    for (const [field, field_definition] of Object.entries(this.schema)) {
+      if (field_definition instanceof SchemaFieldDefinition) {
+        encoded_object[field] = field_definition.encode_object(input_object[field])
+      } else {
+        encoded_object[field] = (field_definition.encode as any)(input_object[field])
+      }
+    }
+    return encoded_object
+  }
+
+  decode_object(val: any): Record<string, any> {
+    const output_object = z.object({}).passthrough().parse(val) as Record<string, any>
+    const decoded_object: Record<string, any> = {}
+    for (const [field, field_definition] of Object.entries(this.schema)) {
+      if (field_definition instanceof SchemaFieldDefinition) {
+        decoded_object[field] = field_definition.decode_object(output_object[field])
+      } else {
+        decoded_object[field] = (field_definition.decode as any)(output_object[field])
+      }
+    }
+    return decoded_object
+  }
+
+  encode = (val: T): string => {
+    const encoded_object = this.encode_object(val)
+    return JSON.stringify(encoded_object)
+  }
+
+  decode = (val: string): T => {
+    const output_object = JSON.parse(val)
+    const decoded_object = this.decode_object(output_object)
+    return decoded_object as any
+  }
+}
+
+type SchemaValue =
+  | StringFieldDefinition
+  | NumberFieldDefinition
+  | BooleanFieldDefinition
+  | DateTimeFieldDefinition
+  | OptionalField<any, any>
+  | DefaultField<any, any>
+  | SchemaFieldDefinition<any>
+
+interface SchemaDefinition {
+  [field: string]: SchemaValue
+}
+type SchemaInput<T extends SchemaDefinition> = OptionalKeys<{
+  [K in keyof T]: T[K] extends FieldDefinitionBase<infer In, any> ? In :
+    never
+}>
+
 // field definitions
 export const string   = (): StringFieldDefinition => new StringFieldDefinition()
 export const number   = (): NumberFieldDefinition => new NumberFieldDefinition()
 export const boolean  = (): BooleanFieldDefinition => new BooleanFieldDefinition()
 export const datetime = (): DateTimeFieldDefinition => new DateTimeFieldDefinition()
 export const json     = <T extends Json>(): JsonFieldDefinition<T> => new JsonFieldDefinition()
+export const schema   = <T extends SchemaDefinition>(schema: T): SchemaFieldDefinition<SchemaInput<T>> => new SchemaFieldDefinition(schema)
