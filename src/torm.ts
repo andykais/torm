@@ -123,27 +123,34 @@ abstract class TormBase<D extends Driver> {
         this.migrations_manager.initialize_database()
       }
 
-      if (auto_migrate) {
-        while (this.migrations_manager.is_database_outdated()) {
-          this.status = 'outdated'
-          const current_version = this.schemas.version()
-          const migration_operation: MigrationOperation = {
-            start_version: current_version,
-            backup: false,
-            next_version: -1,
-          }
-          if (backup_before_migrate) {
-            if (!options?.backups?.folder) {
-              throw new Error(`backups_folder must be defined in order to use automatic backups`)
+      if (auto_migrate && this.migrations_manager.is_database_outdated()) {
+        try {
+          driver.exec(`PRAGMA locking_mode = EXCLUSIVE`)
+
+          while (this.migrations_manager.is_database_outdated()) {
+            this.status = 'outdated'
+            const current_version = this.schemas.version()
+            const migration_operation: MigrationOperation = {
+              start_version: current_version,
+              backup: false,
+              next_version: -1,
             }
-            migration_operation.backup = true
-            this.backup(options.backups.folder, `migration_backup_v${current_version}`)
+            if (backup_before_migrate) {
+              if (!options?.backups?.folder) {
+                throw new Error(`backups_folder must be defined in order to use automatic backups`)
+              }
+              migration_operation.backup = true
+              this.backup(options.backups.folder, `migration_backup_v${current_version}`)
+            }
+            const next_version = this.migrations_manager.upgrade_database()
+            migration_operation.next_version = next_version
+            migration_operations.push(migration_operation)
           }
-          const next_version = this.migrations_manager.upgrade_database()
-          migration_operation.next_version = next_version
-          migration_operations.push(migration_operation)
+          this.initialize_models()
+
+        } finally {
+          driver.exec(`PRAGMA locking_mode = normal`)
         }
-        this.initialize_models()
       }
       if (this.migrations_manager.is_database_outdated()) {
         this.status = 'outdated'
@@ -163,6 +170,8 @@ abstract class TormBase<D extends Driver> {
   }
 
   public abstract backup(folder: string, name: string): void
+
+  public abstract transaction<T>(fn: () => T): () => T
 
   private initialize_models = () => {
     for (const model of this.model_registry) {

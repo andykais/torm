@@ -159,10 +159,16 @@ class MigrationsManager {
     }
     const next_version = upgrade_versions.find(version => version > current_version)
     if (next_version === undefined) throw new Error('No new version exists. Database is up to date')
-    // TODO put a transaction around this block
+
     for (const migration of migration_map.get(next_version)!) {
       migration.prepare_queries()
-      migration.call()
+      if (migration.TRANSACTION) {
+        this.#torm.transaction(() => {
+          migration.call()
+        })()
+      } else {
+        migration.call()
+      }
     }
     this.#torm.schemas.unsafe_version_set(next_version)
 
@@ -225,6 +231,8 @@ interface MigrationClass {
 }
 
 interface MigrationInstance extends ModelBase {
+  /** Whether or not to use a transaction when running this migration. Disabling transactions around migrations should only be done if you know what you are doing. */
+  TRANSACTION: boolean
   version: Version
   call: (driver?: Driver) => void
   is_seed_migration(): boolean
@@ -233,6 +241,7 @@ interface MigrationInstance extends ModelBase {
 abstract class MigrationBase extends ModelBase implements MigrationInstance {
   public abstract version: Version
   public abstract call(driver?: Driver): void
+  public TRANSACTION: boolean = true
 
   public is_seed_migration(): boolean {
     return false

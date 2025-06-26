@@ -350,6 +350,19 @@ class Torm extends TormBase<sqlite3.DatabaseSync> {
     }
   }
 
+  public override transaction = <T>(fn: () => T) => (): T => {
+    try {
+      this.driver.exec('BEGIN TRANSACTION')
+      const result = fn()
+      this.driver.exec('COMMIT')
+      return result
+    } catch(e) {
+      this.driver.exec('ROLLBACK')
+      throw e
+    }
+  }
+
+
   private get_backup_name(folder: string, name: string, suffix?: number): string {
     const now = new Date()
     let backup_name = `${now.getUTCFullYear()}-${now.getUTCMonth().toString().padStart(2, '0')}-${now.getUTCDay().toString().padStart(2, '0')}_${name}`
