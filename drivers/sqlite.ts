@@ -250,16 +250,18 @@ class SchemasModelImpl extends Model implements SchemasModel {
     let { sql } = row
     sql = sql.replace(/^\s+/mg, '') // remove excess whitespace
     sql = sql.replace(/CREATE TABLE "(.*?)"/g, (_, name) => `CREATE TABLE ${name}`) // remove optional quotes around table name
+    sql = sql.replaceAll(/--.*\n/g, '')
     sql = sql.replace(/CREATE TABLE ([a-z_]+) \(([\s\S]+)\)/gm, (_, name, columns_str: string) => {
       const columns = columns_str
       .trim()
-      .split(/\n/)
+      .split(',')
       .map(col => col.trim())
-      .filter(col => !col.startsWith('--'))
-      .flatMap(col => {
-        const inlined_columns: string[] = []
-        let last_column_index = 0
-        let paren_count = 0
+
+      const sanitized_columns: string[] = []
+      let current_column: string[] = []
+      let paren_count = 0
+      for (const col of columns) {
+        if (col.length === 0) continue
         for (let i = 0; i < col.length; i++) {
           const char = col[i]
           switch(char) {
@@ -269,18 +271,19 @@ class SchemasModelImpl extends Model implements SchemasModel {
             case ')':
               paren_count--
               break
-            case ',':
-              if (paren_count === 0) {
-                inlined_columns.push(col.substring(last_column_index, i).trim())
-                last_column_index = i + 1
-              }
-              break
           }
         }
-        if (last_column_index > col.length) inlined_columns.push(col.substring(last_column_index))
-        return inlined_columns
-        })
-      columns.sort((a, b) => {
+        current_column.push(col)
+
+        if (paren_count === 0) {
+          sanitized_columns.push(current_column.join(', '))
+          current_column = []
+        }
+      }
+      if (current_column.length) {
+        sanitized_columns.push(current_column.join(', '))
+      }
+      sanitized_columns.sort((a, b) => {
         if (a.startsWith('id')) return -1
         else if (b.startsWith('id')) return 1
         else if (a.startsWith('FOREIGN KEY')) return 1
@@ -288,7 +291,7 @@ class SchemasModelImpl extends Model implements SchemasModel {
         else return a.localeCompare(b)
       })
       const table_definition = `CREATE TABLE ${name} (
-${columns.join('\n  ')}
+  ${sanitized_columns.join('\n  ')}
 )`
       return table_definition
     })

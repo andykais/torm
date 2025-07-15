@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@db/sqlite@0.11": "0.11.1",
     "jsr:@denosaurs/plug@1": "1.0.6",
+    "jsr:@opentelemetry/api@*": "1.9.0",
     "jsr:@std/assert@*": "1.0.9",
     "jsr:@std/assert@0.217": "0.217.0",
     "jsr:@std/assert@0.221": "0.221.0",
@@ -37,6 +38,9 @@
         "jsr:@std/fs",
         "jsr:@std/path@0.221"
       ]
+    },
+    "@opentelemetry/api@1.9.0": {
+      "integrity": "a8a4980ff5eff7bd322715cad1a128b3208675f1e05b8adbfcf6b240502739b7"
     },
     "@std/assert@0.217.0": {
       "integrity": "c98e279362ca6982d5285c3b89517b757c1e3477ee9f14eb2fdf80a45aaa9642"
