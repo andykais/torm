@@ -18,6 +18,7 @@
   },
 
   "imports": {
+    "@opentelemetry/api": "npm:@opentelemetry/api@^1.9.0",
     "zod": "npm:zod@^3.23.8"
   }
 }

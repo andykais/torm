@@ -1,4 +1,5 @@
 import * as z from 'zod'
+import * as telemetry from './telemetry.ts'
 import type { BuiltSchemaField, SchemaGeneric } from './schema.ts'
 import type { Merge, OptionalKeys } from './util.ts'
 import type { SqlTemplateArg, ParamsField, ResultField } from './query.ts'
@@ -89,6 +90,8 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
   }
 
   protected encode_params = (params: Params | undefined): EncodedParams => {
+    // SchemaGeneric is not assignable to an attribute, but I think we can trust the opentelemetry serialization. If not, we could switch over to the driver encoded params, which we know are definitely serialization friendly
+    const span = telemetry.start_span('statement.encode_params', {params: params as any})
     const encoded_params: {[field: string]: any} = {}
     for (const field of Object.values(this.params)) {
       const val = params ? params[field.field_name] : undefined
@@ -99,14 +102,18 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
           const message = e.format()._errors.join(',')
           throw new TypeError(`${message} on column ${field.table_name}.${field.field_name}:\n${Deno.inspect(params, { colors: true })}`)
         } else {
+          span.recordException(e as Error)
+          span.end()
           throw e
         }
       }
     }
+    span.end()
     return encoded_params
   }
 
   protected decode_result = (result: RawRowData): Result => {
+    const span = telemetry.start_span('statement.decode_result')
     const decoded_result: {[field: string]: any} = {}
     for (const [field_name, val] of Object.entries(result)) {
       const field = this.get_result_field(field_name)
@@ -119,6 +126,8 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
         //   decoded_result[field_name] = val
         // }
       } catch (e) {
+        span.recordException(e as Error)
+        span.end()
         if (e instanceof z.ZodError) {
           const message = e.format()._errors.join(',')
           throw new TypeError(`${message} on column ${field.table_name}.${field.field_name}:\n${Deno.inspect(result, { colors: true })}`)
@@ -128,29 +137,58 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
       }
     }
     // I dont know how to convert these partial types into full types, so we just cast here
+    span.end()
     return decoded_result as Result
   }
 
   public one = (...params: OptionalOnEmpty<Params>): Result | undefined => {
-    return this.one_impl(...params)
+    const span = telemetry.start_span('statement.one', {sql: this.sql})
+    try {
+      return this.one_impl(...params)
+    } catch (e) {
+      span.recordException(e as Error)
+      throw e
+    } finally {
+      span.end()
+    }
   }
   protected abstract one_impl(...params: OptionalOnEmpty<Params>): Result | undefined
 
   public all = (...params: OptionalOnEmpty<Params>): Result[] => {
-    return this.all_impl(...params)
+    const span = telemetry.start_span('statement.all', {sql: this.sql})
+    span.setAttribute('params', params as any) // SchemaGeneric is not assignable to an attribute, but I think we can trust the opentelemetry serialization. If not, we could switch over to the driver encoded params, which we know are definitely serialization friendly
+    try {
+      return this.all_impl(...params)
+    } catch (e) {
+      span.recordException(e as Error)
+      throw e
+    } finally {
+      span.end()
+    }
   }
   protected abstract all_impl(...params: OptionalOnEmpty<Params>): Result[]
 
   public exec = (...params: OptionalOnEmpty<Params>): ExecInfo => {
-    return this.exec_impl(...params)
+    const span = telemetry.start_span('statement.exec', {sql: this.sql})
+    span.setAttribute('params', params as any) // SchemaGeneric is not assignable to an attribute, but I think we can trust the opentelemetry serialization. If not, we could switch over to the driver encoded params, which we know are definitely serialization friendly
+    try {
+      return this.exec_impl(...params)
+    } catch (e) {
+      span.recordException(e as Error)
+      throw e
+    } finally {
+      span.end()
+    }
   }
   protected abstract exec_impl(...params: OptionalOnEmpty<Params>): ExecInfo
 
   public prepare = (driver: Driver) => {
+    const span = telemetry.start_span('statement.exec', {sql: this.sql})
     this._driver = driver
     try {
       this._stmt = this.prepare_impl(this.sql)
     } catch (e) {
+      span.recordException(e as Error)
       if (e instanceof Error === false) throw e
       throw new Error(`${e.message}
 ${'```'}
@@ -158,6 +196,8 @@ ${this.sql}
 ${'```'}`, {
   cause: e
 })
+    } finally {
+      span.end()
     }
   }
 
