@@ -46,7 +46,7 @@ abstract class ModelBase implements ModelInstance {
 
   public prepare_queries(driver?: Driver) {
     for (const stmt of this.registered_stmts) {
-      stmt.prepare_query(driver ?? this.driver)
+      stmt.prepare(driver ?? this.driver)
     }
   }
 
@@ -81,7 +81,7 @@ abstract class ModelBase implements ModelInstance {
 
   protected prepare<T extends SqlTemplateArg[]>(strings: TemplateStringsArray, ...params: T): Statement<StatementParams<T>, StatementResult<T>> {
     const stmt = this.build_stmt(strings, ...params)
-    stmt.prepare_query(this.driver)
+    stmt.prepare(this.driver)
     return stmt
   }
 

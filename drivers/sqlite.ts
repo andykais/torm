@@ -51,7 +51,7 @@ class Statement<
     Result extends SchemaGeneric
   > extends StatementBase<sqlite3.StatementSync, Params, Result> {
 
-  public one = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
+  protected override one_impl = (...[params]: OptionalOnEmpty<Params>): Result | undefined => {
     try {
       const row = this.stmt.get(this.encode_params(params)) as RawRowData
       if (row) return this.decode_result(row)
@@ -60,7 +60,7 @@ class Statement<
     }
   }
 
-  public all = (...[params]: OptionalOnEmpty<Params>): Result[] => {
+  protected override all_impl = (...[params]: OptionalOnEmpty<Params>): Result[] => {
     try {
       const rows = this.stmt.all(this.encode_params(params)) as RawRowData[]
       return rows.map(this.decode_result)
@@ -69,8 +69,7 @@ class Statement<
     }
   }
 
-
-  public exec = (...[params]: OptionalOnEmpty<Params>): {changes: number; last_insert_row_id: number} => {
+  protected override exec_impl = (...[params]: OptionalOnEmpty<Params>): {changes: number; last_insert_row_id: number} => {
     try {
       const info = this.stmt.run(this.encode_params(params))
       return {
@@ -90,7 +89,9 @@ class Statement<
     return new errors.QueryError(this.sql, params, error.message)
   }
 
-  protected prepare = (sql: string): sqlite3.StatementSync => this.driver.prepare(sql)
+  protected override prepare_impl = (sql: string): sqlite3.StatementSync => {
+    return this.driver.prepare(sql)
+  }
 
   static create = <Params extends SchemaGeneric, Result extends SchemaGeneric>(sql: string, params: Params, result: Result): Statement<Params, Result> => {
     return new Statement<Params, Result>(sql, params, result)

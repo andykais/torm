@@ -56,7 +56,7 @@ export interface Statement<Params extends SchemaGeneric, Result extends SchemaGe
     params: Params /* debug only */
     result: Result /* debug only */
 
-    prepare_query(driver: Driver): void
+    prepare(driver: Driver): void
 }
 
 interface EncodedParams {
@@ -131,15 +131,25 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
     return decoded_result as Result
   }
 
-  abstract one(...[params]: OptionalOnEmpty<Params>): Result | undefined
-  abstract all(...[params]: OptionalOnEmpty<Params>): Result[]
-  abstract exec(...[params]: OptionalOnEmpty<Params>): ExecInfo
-  protected abstract prepare(sql: string): DriverStatement
+  public one = (...params: OptionalOnEmpty<Params>): Result | undefined => {
+    return this.one_impl(...params)
+  }
+  protected abstract one_impl(...params: OptionalOnEmpty<Params>): Result | undefined
 
-  public prepare_query(driver: Driver) {
+  public all = (...params: OptionalOnEmpty<Params>): Result[] => {
+    return this.all_impl(...params)
+  }
+  protected abstract all_impl(...params: OptionalOnEmpty<Params>): Result[]
+
+  public exec = (...params: OptionalOnEmpty<Params>): ExecInfo => {
+    return this.exec_impl(...params)
+  }
+  protected abstract exec_impl(...params: OptionalOnEmpty<Params>): ExecInfo
+
+  public prepare = (driver: Driver) => {
     this._driver = driver
     try {
-      this._stmt = this.prepare(this.sql)
+      this._stmt = this.prepare_impl(this.sql)
     } catch (e) {
       if (e instanceof Error === false) throw e
       throw new Error(`${e.message}
@@ -150,6 +160,8 @@ ${'```'}`, {
 })
     }
   }
+
+  protected abstract prepare_impl(sql: string): DriverStatement
 
   public constructor(public sql: string, public params: Params, public result: Result) {}
 
