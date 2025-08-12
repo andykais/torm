@@ -182,7 +182,7 @@ abstract class StatementBase<DriverStatement, Params extends SchemaGeneric, Resu
   }
   protected abstract exec_impl(...params: OptionalOnEmpty<Params>): ExecInfo
 
-  public prepare = (driver: Driver) => {
+  public prepare = (driver: Driver): void => {
     const span = telemetry.start_span('statement.exec', {sql: this.sql})
     this._driver = driver
     try {
