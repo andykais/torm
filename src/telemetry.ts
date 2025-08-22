@@ -13,7 +13,7 @@ export function instrument(span_name?: string) {
     const method_name = String(context.name);
 
     function replacement_method(...args: any[]) {
-      // @ts-ignore
+      // @ts-ignore `this` cannot be typed properly at all in this kind of usage
       const thisClass = this as any
       const final_span_name = span_name || `${thisClass.constructor.name}.${method_name}`;
 
